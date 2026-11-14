@@ -1,4 +1,4 @@
-import 'features/programming/presentation/screens/my_program_schedules_screen.dart';
+﻿import 'features/programming/presentation/screens/my_program_schedules_screen.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 9),
                     const Text(
-                      'Modo demostración: puedes ingresar sin validar credenciales.',
+                      'Modo demostraciÃ³n: puedes ingresar sin validar credenciales.',
                       style: TextStyle(color: _muted, height: 1.5),
                     ),
                     const SizedBox(height: 34),
@@ -110,24 +110,24 @@ class _LoginScreenState extends State<LoginScreen> {
                       maxLength: 8,
                       textInputAction: TextInputAction.next,
                       decoration: _inputDecoration(
-                        'DNI (opcional para la demostración)',
+                        'DNI (opcional para la demostraciÃ³n)',
                         Icons.badge_outlined,
                       ),
                       validator: (value) =>
                           value == null ||
                               !RegExp(r'^\d{8}$').hasMatch(value.trim())
-                          ? 'El DNI debe tener 8 dígitos'
+                          ? 'El DNI debe tener 8 dÃ­gitos'
                           : null,
                     ),
                     SizedBox(height: 20),
-                    _FieldLabel('Contraseña'),
+                    _FieldLabel('ContraseÃ±a'),
                     TextFormField(
                       controller: _password,
                       obscureText: _hidePassword,
                       onFieldSubmitted: (_) => _continue(),
                       decoration:
                           _inputDecoration(
-                            'Contraseña (opcional para la demostración)',
+                            'ContraseÃ±a (opcional para la demostraciÃ³n)',
                             Icons.lock_outline_rounded,
                           ).copyWith(
                             suffixIcon: IconButton(
@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                       validator: (value) => value == null || value.isEmpty
-                          ? 'Ingresa tu contraseña'
+                          ? 'Ingresa tu contraseÃ±a'
                           : null,
                     ),
                     SizedBox(height: 30),
@@ -158,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         child: const Text(
-                          'Entrar a la demostración',
+                          'Entrar a la demostraciÃ³n',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: 28),
                     Center(
                       child: Text(
-                        'Sistema de Gestión de Residuos Sólidos',
+                        'Sistema de GestiÃ³n de Residuos SÃ³lidos',
                         style: TextStyle(color: _muted, fontSize: 12),
                       ),
                     ),
@@ -237,7 +237,7 @@ class DriverHomeScreen extends StatelessWidget {
               ),
               actions: [
                 IconButton(
-                  tooltip: 'Cerrar sesión',
+                  tooltip: 'Cerrar sesiÃ³n',
                   onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                     (_) => false,
@@ -280,7 +280,7 @@ class _DashboardTab extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               const Text(
-                '¡Hola, conductor!',
+                'Â¡Hola, conductor!',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 25,
@@ -289,7 +289,7 @@ class _DashboardTab extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Aquí puedes gestionar tu recorrido del día.',
+                'AquÃ­ puedes gestionar tu recorrido del dÃ­a.',
                 style: TextStyle(color: Color(0xFFD0DED6)),
               ),
               const SizedBox(height: 18),
@@ -312,7 +312,7 @@ class _DashboardTab extends StatelessWidget {
         ),
         const SizedBox(height: 22),
         const Text(
-          'Accesos rápidos',
+          'Accesos rÃ¡pidos',
           style: TextStyle(
             color: _dark,
             fontSize: 18,
@@ -336,21 +336,18 @@ class _DashboardTab extends StatelessWidget {
           subtitle: 'Consulta tus recorridos anteriores',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (_) => const Scaffold(
-                appBar: AppBar(title: Text('Historial de recorridos')),
-                body: _HistoryTab(),
-              ),
+              builder: (_) => const RouteHistoryScreen(),
             ),
           ),
         ),
         _ActionTile(
           icon: Icons.today_outlined,
-          title: 'Programaciones del día',
+          title: 'Programaciones del dÃ­a',
           subtitle: 'Revisa las actividades de hoy',
           onTap: () => _open(
             context,
-            'Programaciones del día',
-            'Aquí se listarán las programaciones correspondientes a hoy.',
+            'Programaciones del dÃ­a',
+            'AquÃ­ se listarÃ¡n las programaciones correspondientes a hoy.',
           ),
         ),
         _ActionTile(
@@ -360,13 +357,13 @@ class _DashboardTab extends StatelessWidget {
           onTap: () => _open(
             context,
             'Validar asistencias',
-            'La validación se conectará con el servicio de asistencias.',
+            'La validaciÃ³n se conectarÃ¡ con el servicio de asistencias.',
           ),
         ),
         _ActionTile(
           icon: Icons.route_outlined,
           title: 'Recorrido en curso',
-          subtitle: 'Visualiza y registra tu ubicación durante la ruta',
+          subtitle: 'Visualiza y registra tu ubicaciÃ³n durante la ruta',
           accent: true,
           onTap: () => Navigator.push(
             context,
@@ -389,7 +386,7 @@ class _DashboardTab extends StatelessWidget {
           onTap: () => _open(
             context,
             'Visualizar recorrido',
-            'Aquí se mostrará el mapa con la trayectoria del recorrido.',
+            'AquÃ­ se mostrarÃ¡ el mapa con la trayectoria del recorrido.',
           ),
         ),
       ],
@@ -468,11 +465,7 @@ class _HistoryTab extends StatelessWidget {
   const _HistoryTab();
 
   @override
-  Widget build(BuildContext context) => const _InfoPage(
-    title: 'Historial de recorridos',
-    description: 'Aquí podrás consultar tus recorridos anteriores y abrir el detalle de cada trayectoria.',
-    icon: Icons.history_rounded,
-  );
+  Widget build(BuildContext context) => const RouteHistoryScreen();
 }
 
 class ActiveRouteScreen extends StatelessWidget {
@@ -486,13 +479,13 @@ class ActiveRouteScreen extends StatelessWidget {
       children: [
         const _MapPlaceholder(
           label: 'Mapa del recorrido',
-          detail: 'El mapa se habilitará con la ubicación GPS.',
+          detail: 'El mapa se habilitarÃ¡ con la ubicaciÃ³n GPS.',
         ),
         const SizedBox(height: 18),
         const _StatusCard(
           icon: Icons.gps_fixed_rounded,
-          title: 'Registro de ubicación',
-          detail: 'La especificación solicita registrar la ubicación cada 5 segundos durante el recorrido.',
+          title: 'Registro de ubicaciÃ³n',
+          detail: 'La especificaciÃ³n solicita registrar la ubicaciÃ³n cada 5 segundos durante el recorrido.',
         ),
         const SizedBox(height: 18),
         FilledButton.icon(
@@ -537,7 +530,7 @@ class _FinishRouteScreenState extends State<FinishRouteScreen> {
         const _StatusCard(
           icon: Icons.check_circle_outline_rounded,
           title: 'Cierre de recorrido',
-          detail: 'Antes de confirmar, registra cualquier observación sobre el servicio.',
+          detail: 'Antes de confirmar, registra cualquier observaciÃ³n sobre el servicio.',
         ),
         const SizedBox(height: 22),
         const _FieldLabel('Observaciones'),
@@ -545,7 +538,7 @@ class _FinishRouteScreenState extends State<FinishRouteScreen> {
           controller: _observation,
           maxLines: 5,
           decoration: _inputDecoration(
-            'Escribe una observación (opcional)',
+            'Escribe una observaciÃ³n (opcional)',
             Icons.edit_note_rounded,
           ),
           textCapitalization: TextCapitalization.sentences,
@@ -555,9 +548,9 @@ class _FinishRouteScreenState extends State<FinishRouteScreen> {
           onPressed: () => showDialog<void>(
             context: context,
             builder: (dialogContext) => AlertDialog(
-              title: const Text('¿Confirmar finalización?'),
+              title: const Text('Â¿Confirmar finalizaciÃ³n?'),
               content: const Text(
-                'Se enviará la solicitud de cierre del recorrido.',
+                'Se enviarÃ¡ la solicitud de cierre del recorrido.',
               ),
               actions: [
                 TextButton(
@@ -584,7 +577,7 @@ class _FinishRouteScreenState extends State<FinishRouteScreen> {
             backgroundColor: _green,
             minimumSize: const Size.fromHeight(52),
           ),
-          child: const Text('Confirmar finalización'),
+          child: const Text('Confirmar finalizaciÃ³n'),
         ),
       ],
     ),
@@ -736,3 +729,468 @@ void _open(BuildContext context, String title, String description) {
     ),
   );
 }
+
+
+// ======================================================
+// HISTORIAL DE RECORRIDOS - DATOS MOCK
+// ======================================================
+
+class RouteHistoryScreen extends StatelessWidget {
+  const RouteHistoryScreen({super.key});
+
+  static const List<_HistoryRecord> records = [
+    _HistoryRecord(
+      date: '10 de noviembre de 2026',
+      zone: 'Zona Norte',
+      vehicle: 'Camión 01',
+      plate: 'ABC-123',
+      start: '06:00 a. m.',
+      end: '01:45 p. m.',
+      duration: '7 h 45 min',
+    ),
+    _HistoryRecord(
+      date: '09 de noviembre de 2026',
+      zone: 'Zona Centro',
+      vehicle: 'Camión 03',
+      plate: 'DEF-456',
+      start: '02:00 p. m.',
+      end: '09:30 p. m.',
+      duration: '7 h 30 min',
+    ),
+    _HistoryRecord(
+      date: '08 de noviembre de 2026',
+      zone: 'Zona Sur',
+      vehicle: 'Camión 05',
+      plate: 'GHI-789',
+      start: '06:15 a. m.',
+      end: '01:50 p. m.',
+      duration: '7 h 35 min',
+    ),
+    _HistoryRecord(
+      date: '07 de noviembre de 2026',
+      zone: 'Zona Norte',
+      vehicle: 'Camión 01',
+      plate: 'ABC-123',
+      start: '10:00 p. m.',
+      end: '05:40 a. m.',
+      duration: '7 h 40 min',
+    ),
+    _HistoryRecord(
+      date: '06 de noviembre de 2026',
+      zone: 'Zona Centro',
+      vehicle: 'Camión 03',
+      plate: 'DEF-456',
+      start: '02:10 p. m.',
+      end: '09:40 p. m.',
+      duration: '7 h 30 min',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
+      appBar: AppBar(
+        backgroundColor: _institutionalBlue,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Historial de recorridos',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        leading: IconButton(
+          tooltip: 'Volver al panel',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+        children: [
+          const Text(
+            'Recorridos realizados',
+            style: TextStyle(
+              color: _dark,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 5),
+          const Text(
+            'Consulta el registro de tus servicios anteriores.',
+            style: TextStyle(color: _muted, fontSize: 13),
+          ),
+          const SizedBox(height: 18),
+
+          Row(
+            children: [
+              const Icon(
+                Icons.history_rounded,
+                color: _institutionalBlue,
+                size: 19,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                '${records.length} recorridos registrados',
+                style: const TextStyle(
+                  color: _dark,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+
+          ...records.map(
+            (record) => _HistoryRecordCard(
+              record: record,
+              onTap: () => _showDetails(context, record),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+          const Text(
+            'Datos de demostración · Pendiente de conexión con el backend',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: _muted, fontSize: 10),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetails(BuildContext context, _HistoryRecord record) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(21, 12, 21, 24),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0E5E8),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 23),
+                  const Text(
+                    'Detalle del recorrido',
+                    style: TextStyle(
+                      color: _dark,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    record.date,
+                    style: const TextStyle(color: _muted, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  const _HistoryStatus(),
+                  const SizedBox(height: 20),
+                  _HistoryDetailRow(
+                    icon: Icons.location_on_outlined,
+                    label: 'Zona atendida',
+                    value: record.zone,
+                  ),
+                  _HistoryDetailRow(
+                    icon: Icons.local_shipping_outlined,
+                    label: 'Vehículo',
+                    value: record.vehicle,
+                  ),
+                  _HistoryDetailRow(
+                    icon: Icons.confirmation_number_outlined,
+                    label: 'Placa',
+                    value: record.plate,
+                  ),
+                  _HistoryDetailRow(
+                    icon: Icons.play_circle_outline,
+                    label: 'Hora de inicio',
+                    value: record.start,
+                  ),
+                  _HistoryDetailRow(
+                    icon: Icons.stop_circle_outlined,
+                    label: 'Hora de finalización',
+                    value: record.end,
+                  ),
+                  _HistoryDetailRow(
+                    icon: Icons.timer_outlined,
+                    label: 'Duración',
+                    value: record.duration,
+                  ),
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 45,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cerrar detalle'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryRecord {
+  const _HistoryRecord({
+    required this.date,
+    required this.zone,
+    required this.vehicle,
+    required this.plate,
+    required this.start,
+    required this.end,
+    required this.duration,
+  });
+
+  final String date;
+  final String zone;
+  final String vehicle;
+  final String plate;
+  final String start;
+  final String end;
+  final String duration;
+}
+
+class _HistoryRecordCard extends StatelessWidget {
+  const _HistoryRecordCard({
+    required this.record,
+    required this.onTap,
+  });
+
+  final _HistoryRecord record;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 11),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(color: const Color(0xFFE0E5E8)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(9),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: _institutionalBlue,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Text(
+                      record.date,
+                      style: const TextStyle(
+                        color: _dark,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: _muted,
+                    size: 20,
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: Color(0xFFE0E5E8)),
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      record.zone,
+                      style: const TextStyle(
+                        color: _dark,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F2EC),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: const Text(
+                      'Finalizado',
+                      style: TextStyle(
+                        color: Color(0xFF28734D),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 11),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_shipping_outlined,
+                    color: _muted,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '${record.vehicle} · ${record.plate}',
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.access_time,
+                    color: _muted,
+                    size: 17,
+                  ),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      '${record.start} - ${record.end}',
+                      style: const TextStyle(color: _muted, fontSize: 12),
+                    ),
+                  ),
+                  Text(
+                    record.duration,
+                    style: const TextStyle(
+                      color: _institutionalBlue,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  'Consultar detalle',
+                  style: TextStyle(
+                    color: _institutionalBlue,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryStatus extends StatelessWidget {
+  const _HistoryStatus();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F2EC),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.check_circle_outline, color: Color(0xFF28734D)),
+          SizedBox(width: 10),
+          Text(
+            'Recorrido finalizado',
+            style: TextStyle(
+              color: Color(0xFF28734D),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistoryDetailRow extends StatelessWidget {
+  const _HistoryDetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 17),
+      child: Row(
+        children: [
+          Icon(icon, color: _institutionalBlue, size: 19),
+          const SizedBox(width: 11),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: _dark,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+

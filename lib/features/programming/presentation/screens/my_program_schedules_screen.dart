@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 const _institutionalBlue = Color(0xFF0D47A1);
 const _ink = Color(0xFF263238);
@@ -16,11 +16,11 @@ class MyProgramSchedulesScreen extends StatelessWidget {
       year: '2026',
       date: '30 de octubre de 2026',
       zone: 'Norte',
-      vehicle: 'Camión 01',
+      vehicle: 'CamiÃ³n 01',
       plate: 'ABC-123',
-      shift: 'Mañana',
+      shift: 'MaÃ±ana',
       hours: '06:00 - 14:00',
-      workDays: 'Lun, Mar, Mié, Jue, Vie',
+      workDays: 'Lun, Mar, MiÃ©, Jue, Vie',
     ),
     _Schedule(
       day: '01',
@@ -28,11 +28,11 @@ class MyProgramSchedulesScreen extends StatelessWidget {
       year: '2026',
       date: '01 de noviembre de 2026',
       zone: 'Centro',
-      vehicle: 'Camión 03',
+      vehicle: 'CamiÃ³n 03',
       plate: 'DEF-456',
       shift: 'Tarde',
       hours: '14:00 - 22:00',
-      workDays: 'Lun, Mar, Mié, Jue, Vie',
+      workDays: 'Lun, Mar, MiÃ©, Jue, Vie',
     ),
     _Schedule(
       day: '03',
@@ -40,11 +40,11 @@ class MyProgramSchedulesScreen extends StatelessWidget {
       year: '2026',
       date: '03 de noviembre de 2026',
       zone: 'Sur',
-      vehicle: 'Camión 05',
+      vehicle: 'CamiÃ³n 05',
       plate: 'GHI-789',
       shift: 'Noche',
       hours: '22:00 - 06:00',
-      workDays: 'Lun, Mar, Mié, Jue, Vie',
+      workDays: 'Lun, Mar, MiÃ©, Jue, Vie',
     ),
   ];
 
@@ -61,9 +61,9 @@ class MyProgramSchedulesScreen extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w700),
         ),
         leading: IconButton(
-          tooltip: 'Menú',
-          onPressed: () {},
-          icon: const Icon(Icons.menu),
+          tooltip: 'Volver al panel',
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.arrow_back),
         ),
         actions: [
           IconButton(
@@ -157,7 +157,7 @@ class _DriverCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Juan Pérez',
+                'Juan PÃ©rez',
                 style: TextStyle(
                   color: _ink,
                   fontSize: 16,
@@ -258,8 +258,8 @@ class _ScheduleCard extends StatelessWidget {
                         const SizedBox(height: 5),
                         _ScheduleInfo(
                           icon: Icons.local_shipping_outlined,
-                          label: 'Vehículo',
-                          value: '${schedule.vehicle} · ${schedule.plate}',
+                          label: 'VehÃ­culo',
+                          value: '${schedule.vehicle} Â· ${schedule.plate}',
                         ),
                         const SizedBox(height: 5),
                         _ScheduleInfo(
@@ -270,7 +270,7 @@ class _ScheduleCard extends StatelessWidget {
                         const SizedBox(height: 5),
                         _ScheduleInfo(
                           icon: Icons.calendar_today_outlined,
-                          label: 'Días',
+                          label: 'DÃ­as',
                           value: schedule.workDays,
                         ),
                       ],
@@ -366,7 +366,7 @@ class _ScheduleDetails extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               const Text(
-                'Detalle de programación',
+                'Detalle de programaciÃ³n',
                 style: TextStyle(
                   color: _ink,
                   fontSize: 20,
@@ -379,7 +379,7 @@ class _ScheduleDetails extends StatelessWidget {
               _DetailRow(Icons.location_on_outlined, 'Zona', schedule.zone),
               _DetailRow(
                 Icons.local_shipping_outlined,
-                'Vehículo',
+                'VehÃ­culo',
                 schedule.vehicle,
               ),
               _DetailRow(
@@ -391,7 +391,7 @@ class _ScheduleDetails extends StatelessWidget {
               _DetailRow(Icons.access_time, 'Horario', schedule.hours),
               _DetailRow(
                 Icons.calendar_today_outlined,
-                'Días de trabajo',
+                'DÃ­as de trabajo',
                 schedule.workDays,
               ),
               const SizedBox(height: 8),
@@ -449,3 +449,4 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
+
