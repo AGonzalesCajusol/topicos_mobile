@@ -78,10 +78,15 @@ class ApiService {
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        data['message']?.toString() ?? 'Ocurrió un error al comunicarse con el servidor.',
-        statusCode: response.statusCode,
-      );
+      final message = switch (response.statusCode) {
+        401 => 'El correo electrónico o la contraseña son incorrectos. Revisa tus datos e inténtalo nuevamente.',
+        403 => data['message']?.toString() ?? 'No tienes autorización para ingresar.',
+        422 => 'Revisa el correo electrónico y la contraseña ingresados.',
+        429 => 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.',
+        500 => 'Ocurrió un error en el servidor. Inténtalo más tarde.',
+        _ => data['message']?.toString() ?? 'Ocurrió un error al comunicarse con el servidor.',
+      };
+      throw ApiException(message, statusCode: response.statusCode);
     }
     return data;
   }

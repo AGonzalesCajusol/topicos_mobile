@@ -125,7 +125,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final ValueChanged<Map<String, dynamic>> onLogin;
   final _formKey = GlobalKey<FormState>();
   final _user = TextEditingController();
   final _pass = TextEditingController();
@@ -233,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: display(16, cream, w: FontWeight.w500),
                             decoration:
                                 _deco(
-                                  'Ingrese su contraseña',
+                                  'Ingresa tu contraseña',
                                   Icons.lock_rounded,
                                 ).copyWith(
                                   suffixIcon: IconButton(
