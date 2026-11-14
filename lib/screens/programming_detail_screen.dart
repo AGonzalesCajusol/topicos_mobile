@@ -11,7 +11,7 @@ const _primaryText = AppColors.text;
 const _secondaryText = AppColors.muted;
 const _accent = AppColors.green;
 const _success = AppColors.green;
-const _warning = AppColors.warning;
+const _warning = AppColors.muted;
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
