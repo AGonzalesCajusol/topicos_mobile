@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() => runApp(const DriverApp());
@@ -54,12 +54,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _continue() {
-    if (!_formKey.currentState!.validate()) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('El backend todavía no expone autenticación móvil. No se enviaron credenciales.'),
-        duration: Duration(seconds: 4),
-      ),
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
     );
   }
 
@@ -95,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: _dark)),
                     const SizedBox(height: 9),
                     const Text(
-                      'Ingresa para consultar tus programaciones y recorridos.',
+                      'Modo demostración: puedes ingresar sin validar credenciales.',
                       style: TextStyle(color: _muted, height: 1.5),
                     ),
                     const SizedBox(height: 34),
@@ -106,20 +102,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       maxLength: 8,
                       textInputAction: TextInputAction.next,
                       decoration: _inputDecoration(
-                          'Ingresa tu DNI de 8 dígitos', Icons.badge_outlined),
+                          'DNI (opcional para la demostración)', Icons.badge_outlined),
                       validator: (value) =>
                           value == null || !RegExp(r'^\d{8}$').hasMatch(value.trim())
                               ? 'El DNI debe tener 8 dígitos'
                               : null,
                     ),
-                    void SizedBox(height: 20),
-                    void _FieldLabel('Contraseña'),
-                    void TextFormField(
+                    SizedBox(height: 20),
+                    _FieldLabel('Contraseña'),
+                    TextFormField(
                       controller: _password,
                       obscureText: _hidePassword,
                       onFieldSubmitted: (_) => _continue(),
                       decoration: _inputDecoration(
-                        'Ingresa tu contraseña',
+                        'Contraseña (opcional para la demostración)',
                         Icons.lock_outline_rounded,
                       ).copyWith(
                         suffixIcon: IconButton(
@@ -134,8 +130,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? 'Ingresa tu contraseña'
                           : null,
                     ),
-                    void SizedBox(height: 30),
-                    void SizedBox(
+                    SizedBox(height: 30),
+                    SizedBox(
                       width: double.infinity,
                       height: 54,
                       child: FilledButton(
@@ -145,13 +141,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(15)),
                         ),
-                        child: const Text('Ingresar',
+                        child: const Text('Entrar a la demostración',
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w700)),
                       ),
                     ),
-                    void SizedBox(height: 28),
-                    void Center(
+                    SizedBox(height: 28),
+                    Center(
                       child: Text('Sistema de Gestión de Residuos Sólidos',
                           style: TextStyle(color: _muted, fontSize: 12)),
                     ),
