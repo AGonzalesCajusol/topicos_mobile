@@ -1,9 +1,12 @@
+import 'features/programming/presentation/screens/my_program_schedules_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() => runApp(const DriverApp());
 
 const _green = Color(0xFF2E9B65);
+const _institutionalBlue = Color(0xFF0D47A1);
 const _dark = Color(0xFF14251F);
 const _muted = Color(0xFF718078);
 const _bg = Color(0xFFF4F7F5);
@@ -219,62 +222,32 @@ class _FieldLabel extends StatelessWidget {
   );
 }
 
-class DriverHomeScreen extends StatefulWidget {
+class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
 
   @override
-  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
-}
-
-class _DriverHomeScreenState extends State<DriverHomeScreen> {
-  int _selectedIndex = 0;
-
-  @override
   Widget build(BuildContext context) {
-    final pages = [
-      const _DashboardTab(),
-      const _ScheduleTab(),
-      const _HistoryTab(),
-    ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Panel del conductor',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Cerrar sesión',
-            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-              (_) => false,
+              backgroundColor: _institutionalBlue,
+              foregroundColor: Colors.white,
+              title: const Text(
+                'Panel del conductor',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Cerrar sesión',
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (_) => false,
+                  ),
+                  icon: const Icon(Icons.logout_rounded),
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
-            icon: const Icon(Icons.logout_rounded),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(child: pages[_selectedIndex]),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (value) =>
-            setState(() => _selectedIndex = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: 'Agenda',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.history_rounded),
-            label: 'Historial',
-          ),
-        ],
-      ),
+      body: const SafeArea(child: _DashboardTab()),
     );
   }
 }
@@ -285,13 +258,13 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _dark,
-            borderRadius: BorderRadius.circular(22),
+            color: _institutionalBlue,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,24 +310,37 @@ class _DashboardTab extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 25),
+        const SizedBox(height: 22),
         const Text(
           'Accesos rápidos',
           style: TextStyle(
             color: _dark,
-            fontSize: 19,
+            fontSize: 18,
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         _ActionTile(
           icon: Icons.assignment_outlined,
           title: 'Mis programaciones',
           subtitle: 'Consulta tus fechas y horarios asignados',
-          onTap: () => _open(
-            context,
-            'Mis programaciones',
-            'Aquí se mostrarán las programaciones asignadas al conductor.',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const MyProgramSchedulesScreen(),
+            ),
+          ),
+        ),
+        _ActionTile(
+          icon: Icons.history_rounded,
+          title: 'Historial de recorridos',
+          subtitle: 'Consulta tus recorridos anteriores',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const Scaffold(
+                appBar: AppBar(title: Text('Historial de recorridos')),
+                body: _HistoryTab(),
+              ),
+            ),
           ),
         ),
         _ActionTile(
@@ -428,25 +414,25 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 11),
+    margin: const EdgeInsets.only(bottom: 8),
     color: Colors.white,
     elevation: 0,
     shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(17),
-      side: const BorderSide(color: Color(0xFFE8EEEA)),
+      borderRadius: BorderRadius.circular(8),
+      side: const BorderSide(color: Color(0xFFE0E5E8)),
     ),
     child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       leading: Container(
-        width: 47,
-        height: 47,
+        width: 42,
+        height: 42,
         decoration: BoxDecoration(
           color: accent
-              ? _green.withValues(alpha: .14)
-              : const Color(0xFFF0F5F2),
-          borderRadius: BorderRadius.circular(14),
+              ? _institutionalBlue.withValues(alpha: .12)
+              : const Color(0xFFF1F4F7),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: _green),
+        child: Icon(icon, color: _institutionalBlue, size: 22),
       ),
       title: Text(
         title,
@@ -473,11 +459,9 @@ class _ScheduleTab extends StatelessWidget {
   const _ScheduleTab();
 
   @override
-  Widget build(BuildContext context) => const _InfoPage(
-    title: 'Mis programaciones',
-    description: 'En esta sección aparecerán tus programaciones asignadas. La fecha y hora serán de solo lectura para el conductor.',
-    icon: Icons.calendar_month_outlined,
-  );
+  Widget build(BuildContext context) {
+    return const MyProgramSchedulesScreen();
+  }
 }
 
 class _HistoryTab extends StatelessWidget {
@@ -730,6 +714,14 @@ class _StatusCard extends StatelessWidget {
 }
 
 void _open(BuildContext context, String title, String description) {
+  if (title == 'Mis programaciones') {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MyProgramSchedulesScreen()),
+    );
+    return;
+  }
+
   Navigator.push(
     context,
     MaterialPageRoute(
