@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
+import 'programming_detail_screen.dart';
 
 const _background = Color(0xFF10201C);
 const _surface = Color(0xFF182B26);
@@ -207,10 +208,22 @@ class _HomeScreenState extends State<HomeScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final item = Map<String, dynamic>.from(items[index] as Map);
+                        final programmingId = int.tryParse(item['id'].toString());
                         return _ProgrammingCard(
                           item: item,
                           today: _todayOnly,
                           text: _text,
+                          onTap: programmingId == null
+                              ? () {}
+                              : () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => ProgrammingDetailScreen(
+                                        programmingId: programmingId,
+                                      ),
+                                    ),
+                                  );
+                                },
                         );
                       },
                     ),
@@ -257,10 +270,17 @@ class _FilterButton extends StatelessWidget {
 }
 
 class _ProgrammingCard extends StatelessWidget {
-  const _ProgrammingCard({required this.item, required this.today, required this.text});
+  const _ProgrammingCard({
+    required this.item,
+    required this.today,
+    required this.text,
+    required this.onTap,
+  });
+
   final Map<String, dynamic> item;
   final bool today;
   final String Function(dynamic, [String]) text;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -268,77 +288,173 @@ class _ProgrammingCard extends StatelessWidget {
     final days = (item['days'] as List?)?.join(' · ') ?? '';
     final status = text(item['status'], 'Programado');
     final ready = item['can_start_route'] == true;
-    return Container(
-      padding: const EdgeInsets.all(17),
-      decoration: BoxDecoration(
-        color: _surface,
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        child: Container(
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            color: _surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: _green.withOpacity(.14), borderRadius: BorderRadius.circular(9)),
-                child: Text('RECORRIDO #${text(item['id'])}', style: const TextStyle(color: _green, fontSize: 11, fontWeight: FontWeight.w800)),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(.14),
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Text(
+                      'RECORRIDO #${text(item['id'])}',
+                      style: const TextStyle(
+                        color: _green,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Flexible(
+                    child: Text(
+                      status,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(
+                        color: _yellow,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              Flexible(child: Text(status, textAlign: TextAlign.right, style: const TextStyle(color: _yellow, fontSize: 11, fontWeight: FontWeight.w700))),
+              const SizedBox(height: 15),
+              _InfoLine(
+                icon: Icons.calendar_today_rounded,
+                label: 'Fecha',
+                value: text(item['date'], days.isEmpty ? 'Sin fecha' : days),
+              ),
+              _InfoLine(icon: Icons.map_rounded, label: 'Zona', value: text(item['zone'])),
+              _InfoLine(icon: Icons.local_shipping_rounded, label: 'Vehículo', value: text(item['vehicle'])),
+              _InfoLine(icon: Icons.pin_rounded, label: 'Placa', value: text(item['plate'])),
+              _InfoLine(
+                icon: Icons.schedule_rounded,
+                label: 'Turno',
+                value: '${text(item['shift'])} · ${text(item['hours'], 'Horario no definido')}',
+              ),
+              if (item['notes'] != null && item['notes'].toString().trim().isNotEmpty)
+                _InfoLine(
+                  icon: Icons.notes_rounded,
+                  label: 'Indicaciones',
+                  value: text(item['notes']),
+                ),
+              if (today && people.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(color: _border),
+                Row(
+                  children: [
+                    const Text(
+                      'Equipo de trabajo',
+                      style: TextStyle(
+                        color: _cream,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${item['present_count'] ?? 0} de ${people.length} presentes',
+                      style: const TextStyle(color: _muted, fontSize: 11),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 9),
+                ...people.map((raw) {
+                  final person = Map<String, dynamic>.from(raw as Map);
+                  final attended = person['attended'] == true;
+                  final role = person['role'] == 'driver' ? 'Conductor' : 'Ayudante';
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      children: [
+                        Icon(
+                          attended ? Icons.check_circle_rounded : Icons.schedule_rounded,
+                          color: attended ? _green : _yellow,
+                          size: 17,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            text(person['name']),
+                            style: const TextStyle(
+                              color: _cream,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '$role · ${text(person['attendance_status'], 'Pendiente')}',
+                          style: const TextStyle(color: _muted, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+                if (ready)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: _green, size: 17),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'El equipo está completo. El recorrido está habilitado.',
+                            style: TextStyle(
+                              color: _green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+              const SizedBox(height: 14),
+              const Divider(color: _border),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Ver detalle de programación',
+                    style: TextStyle(
+                      color: _green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(Icons.arrow_forward_rounded, color: _green, size: 16),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 15),
-          _InfoLine(icon: Icons.calendar_today_rounded, label: 'Fecha', value: text(item['date'], days.isEmpty ? 'Sin fecha' : days)),
-          _InfoLine(icon: Icons.map_rounded, label: 'Zona', value: text(item['zone'])),
-          _InfoLine(icon: Icons.local_shipping_rounded, label: 'Vehículo', value: text(item['vehicle'])),
-          _InfoLine(icon: Icons.pin_rounded, label: 'Placa', value: text(item['plate'])),
-          _InfoLine(icon: Icons.schedule_rounded, label: 'Turno', value: '${text(item['shift'])} · ${text(item['hours'], 'Horario no definido')}'),
-          if (item['notes'] != null && item['notes'].toString().trim().isNotEmpty)
-            _InfoLine(icon: Icons.notes_rounded, label: 'Indicaciones', value: text(item['notes'])),
-          if (today && people.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Divider(color: _border),
-            Row(
-              children: [
-                const Text('Equipo de trabajo', style: TextStyle(color: _cream, fontSize: 13, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                Text('${item['present_count'] ?? 0} de ${people.length} presentes', style: const TextStyle(color: _muted, fontSize: 11)),
-              ],
-            ),
-            const SizedBox(height: 9),
-            ...people.map((raw) {
-              final person = Map<String, dynamic>.from(raw as Map);
-              final attended = person['attended'] == true;
-              final role = person['role'] == 'driver' ? 'Conductor' : 'Ayudante';
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    Icon(attended ? Icons.check_circle_rounded : Icons.schedule_rounded, color: attended ? _green : _yellow, size: 17),
-                    const SizedBox(width: 8),
-                    Expanded(child: Text(text(person['name']), style: const TextStyle(color: _cream, fontSize: 12, fontWeight: FontWeight.w600))),
-                    Text('$role · ${text(person['attendance_status'], 'Pendiente')}', style: const TextStyle(color: _muted, fontSize: 10)),
-                  ],
-                ),
-              );
-            }),
-            if (ready)
-              Container(
-                margin: const EdgeInsets.only(top: 10),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: _green.withOpacity(.12), borderRadius: BorderRadius.circular(10)),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle_rounded, color: _green, size: 17),
-                    SizedBox(width: 8),
-                    Expanded(child: Text('El equipo está completo. El recorrido está habilitado.', style: TextStyle(color: _green, fontSize: 11, fontWeight: FontWeight.w700))),
-                  ],
-                ),
-              ),
-          ],
-        ],
+        ),
       ),
     );
   }
