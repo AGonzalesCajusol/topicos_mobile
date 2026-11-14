@@ -20,7 +20,6 @@ class DriverApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: _bg,
         colorScheme: ColorScheme.fromSeed(seedColor: _green),
-        textTheme: GoogleFonts.interTextTheme(),
         appBarTheme: const AppBarTheme(
           backgroundColor: _bg,
           foregroundColor: _dark,
@@ -351,7 +350,8 @@ class _ActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-  }) : accent = false;
+    this.accent = false,
+  });
 
   final IconData icon;
   final String title;
