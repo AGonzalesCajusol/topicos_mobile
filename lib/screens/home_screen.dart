@@ -10,7 +10,7 @@ const _border = AppColors.border;
 const _cream = AppColors.text;
 const _muted = AppColors.muted;
 const _green = AppColors.green;
-const _yellow = AppColors.warning;
+const _yellow = AppColors.muted;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
