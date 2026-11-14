@@ -11,7 +11,7 @@ const _primaryText = AppColors.text;
 const _secondaryText = AppColors.muted;
 const _accent = AppColors.green;
 const _success = AppColors.green;
-const _warning = AppColors.muted;
+const _pending = AppColors.muted;
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
@@ -331,7 +331,7 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = complete ? _success : _warning;
+    final color = complete ? _success : _pending;
     final message = complete
         ? 'El equipo está completo'
         : 'Hay personal pendiente de asistencia';
@@ -457,7 +457,7 @@ class _PersonAttendanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = attended ? _success : _warning;
+    final statusColor = attended ? _success : _pending;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
