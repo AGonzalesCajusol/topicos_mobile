@@ -6,4 +6,7 @@ class ProgrammingService {
 
   static Future<Map<String, dynamic>> today() =>
       ApiService.get('conductor/programaciones/hoy');
+
+  static Future<Map<String, dynamic>> detail(int id) =>
+      ApiService.get('conductor/programaciones/$id');
 }
