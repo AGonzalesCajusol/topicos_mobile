@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  static const background = Color(0xFFF7F9F7);
+  static const background = Color(0xFFFFFFFF);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceSoft = Color(0xFFF1F5F2);
-  static const border = Color(0xFFE2E9E4);
-  static const text = Color(0xFF151B17);
-  static const muted = Color(0xFF68746C);
+  static const surfaceSoft = Color(0xFFF5F5F5);
+  static const border = Color(0xFFE5E5E5);
+  static const text = Color(0xFF111111);
+  static const muted = Color(0xFF666666);
   static const green = Color(0xFF168447);
-  static const greenDark = Color(0xFF116B39);
-  static const greenSoft = Color(0xFFE9F5ED);
-  static const warning = Color(0xFFB7791F);
-  static const warningSoft = Color(0xFFFFF5E5);
-  static const danger = Color(0xFFB93838);
+  static const greenDark = Color(0xFF0F6335);
+  static const greenSoft = Color(0xFFEAF5EE);
 }
 
 abstract final class AppTheme {
