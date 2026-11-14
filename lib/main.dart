@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'screens/home_screen.dart';
+import 'services/auth_service.dart';
+import 'services/api_service.dart';
 
 void main() => runApp(const RsuApp());
 
@@ -49,19 +52,80 @@ class RsuApp extends StatelessWidget {
         scaffoldBackgroundColor: bg,
         colorScheme: const ColorScheme.dark(primary: green),
       ),
-      home: const LoginScreen(),
+      home: const AuthGate(),
     );
   }
 }
 
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  Map<String, dynamic>? _employee;
+  bool _checking = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final employee = await AuthService.restoreSession();
+      if (!mounted) return;
+      setState(() {
+        _employee = employee;
+        _checking = false;
+      });
+    } catch (_) {
+      await AuthService.logout();
+      if (!mounted) return;
+      setState(() => _checking = false);
+    }
+  }
+
+  void _onLogin(Map<String, dynamic> employee) {
+    setState(() => _employee = employee);
+  }
+
+  Future<void> _onLogout() async {
+    await AuthService.logout();
+    if (mounted) setState(() => _employee = null);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_checking) {
+      return const Scaffold(
+        backgroundColor: bg,
+        body: Center(child: CircularProgressIndicator(color: green)),
+      );
+    }
+
+    if (_employee == null) {
+      return LoginScreen(onLogin: _onLogin);
+    }
+
+    return HomeScreen(employee: _employee!, onLogout: _onLogout);
+  }
+}
+
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, required this.onLogin});
+
+  final ValueChanged<Map<String, dynamic>> onLogin;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final ValueChanged<Map<String, dynamic>> onLogin;
   final _formKey = GlobalKey<FormState>();
   final _user = TextEditingController();
   final _pass = TextEditingController();
@@ -78,9 +142,30 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
-    // TODO: llamar a tu API de autenticación aquí
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) setState(() => _loading = false);
+    try {
+      final employee = await AuthService.login(_user.text.trim(), _pass.text);
+      if (mounted) widget.onLogin(employee);
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: coral,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo conectar con el servidor. Revisa tu conexión.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: coral,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -113,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Ingresa con tu usuario para ver tu ruta del día.',
+                      'Inicia sesión para consultar tus recorridos y horarios.',
                       style: display(15, muted, w: FontWeight.w500, h: 1.4),
                     ),
                     const SizedBox(height: 24),
@@ -122,18 +207,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _label('Usuario'),
+                          _label('Correo electrónico'),
                           TextFormField(
                             controller: _user,
+                            keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
+                            autocorrect: false,
+                            autofillHints: const [AutofillHints.email],
                             style: display(16, cream, w: FontWeight.w500),
                             decoration: _deco(
-                              'Ingrese su usuario',
+                              'Ingresa tu correo electrónico',
                               Icons.person_rounded,
                             ),
                             validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Escribe tu usuario'
+                                ? 'Ingresa tu correo electrónico'
                                 : null,
                           ),
                           const SizedBox(height: 16),
@@ -167,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 24),
                           _PressButton(
-                            label: _loading ? 'Ingresando…' : 'Ingresar',
+                            label: _loading ? 'Iniciando sesión…' : 'Iniciar sesión',
                             onTap: _loading ? null : _login,
                           ),
                         ],
@@ -178,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Column(
                         children: [
                           Text(
-                            '¡a recorrer la ciudad!',
+                            '¡Vamos a recorrer la ciudad!',
                             style: hand(24, yellow),
                           ),
                           const SizedBox(height: 2),
