@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 
-const _pageBackground = Color(0xFF10201C);
-const _panel = Color(0xFF182B26);
-const _panelBorder = Color(0xFF2C4A41);
-const _primaryText = Color(0xFFF4EFE3);
-const _secondaryText = Color(0xFF9DB5AB);
-const _accent = Color(0xFF7BE495);
-const _warning = Color(0xFFFFD25E);
+const _pageBackground = Color(0xFFF3F6FA);
+const _panel = Color(0xFFFFFFFF);
+const _panelBorder = Color(0xFFE1E8F0);
+const _primaryText = Color(0xFF1F2937);
+const _secondaryText = Color(0xFF64748B);
+const _accent = Color(0xFF1267B3);
+const _success = Color(0xFF16845B);
+const _warning = Color(0xFFB7791F);
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
@@ -62,8 +63,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
     return Scaffold(
       backgroundColor: _pageBackground,
       appBar: AppBar(
-        backgroundColor: _panel,
-        foregroundColor: _primaryText,
+        backgroundColor: const Color(0xFF1267B3),
+        foregroundColor: Colors.white,
         elevation: 0,
         title: const Text(
           'Programación de hoy',
@@ -329,7 +330,7 @@ class _StatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = complete ? _accent : _warning;
+    final color = complete ? _success : _warning;
     final message = complete
         ? 'El equipo está completo'
         : 'Hay personal pendiente de asistencia';
@@ -455,7 +456,7 @@ class _PersonAttendanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = attended ? _accent : _warning;
+    final statusColor = attended ? _success : _warning;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 9),
       child: Row(
