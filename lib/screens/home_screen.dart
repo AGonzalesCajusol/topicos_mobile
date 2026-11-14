@@ -9,7 +9,6 @@ const _cream = Color(0xFFF4EFE3);
 const _muted = Color(0xFF9DB5AB);
 const _green = Color(0xFF7BE495);
 const _yellow = Color(0xFFFFD25E);
-const _red = Color(0xFFFF7A66);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -148,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(child: _FilterButton(label: 'Programaciones de hoy', selected: _todayOnly, onTap: () => _changeFilter(true))),
                       const SizedBox(width: 9),
-                      Expanded(child: _FilterButton(label: 'Todas', selected: !_todayOnly, onTap: () => _changeFilter(false))),
+                      Expanded(child: _FilterButton(label: 'Todas las programaciones', selected: !_todayOnly, onTap: () => _changeFilter(false))),
                     ],
                   ),
                 ),
@@ -267,7 +266,7 @@ class _ProgrammingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final people = (item['people'] as List?) ?? [];
     final days = (item['days'] as List?)?.join(' · ') ?? '';
-    final status = text(item['status'], 'Programada');
+    final status = text(item['status'], 'Programado');
     final ready = item['can_start_route'] == true;
     return Container(
       padding: const EdgeInsets.all(17),
