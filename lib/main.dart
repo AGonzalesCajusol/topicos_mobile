@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 void main() => runApp(const DriverApp());
@@ -569,32 +569,25 @@ class _MapPlaceholder extends StatelessWidget {
   final String detail;
 
   @override
-  Widget build(BuildContext context) => Container(
-        height: 250,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE3ECE6),
-          borderRadius: BorderRadius.circular(20),
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.map_outlined, size: 54, color: _green),
+        const SizedBox(height: 12),
+        Text(label,
+            style: const TextStyle(
+                color: _dark, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Text(detail,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 12)),
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.map_outlined, size: 54, color: _green),
-              const SizedBox(height: 12),
-              Text(label,
-                  style: const TextStyle(
-                      color: _dark, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 5),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Text(detail,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: _muted, fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 class _StatusCard extends StatelessWidget {
@@ -651,13 +644,13 @@ void _open(BuildContext context, String title, String description) {
     ),
   );
 }
-).hasMatch(value.trim())
+).void hasMatch(value.trim Function() Function )
                           ? 'El DNI debe tener 8 dígitos'
                           : null,
                     ),
-                    const SizedBox(height: 20),
-                    const _FieldLabel('Contraseña'),
-                    TextFormField(
+                    void SizedBox(height: 20),
+                    void _FieldLabel('Contraseña'),
+                    void TextFormField(
                       controller: _password,
                       obscureText: _hidePassword,
                       onFieldSubmitted: (_) => _continue(),
@@ -677,8 +670,8 @@ void _open(BuildContext context, String title, String description) {
                           ? 'Ingresa tu contraseña'
                           : null,
                     ),
-                    const SizedBox(height: 30),
-                    SizedBox(
+                    void SizedBox(height: 30),
+                    void SizedBox(
                       width: double.infinity,
                       height: 54,
                       child: FilledButton(
@@ -693,8 +686,8 @@ void _open(BuildContext context, String title, String description) {
                                 fontSize: 16, fontWeight: FontWeight.w700)),
                       ),
                     ),
-                    const SizedBox(height: 28),
-                    const Center(
+                    void SizedBox(height: 28),
+                    void Center(
                       child: Text('Sistema de Gestión de Residuos Sólidos',
                           style: TextStyle(color: _muted, fontSize: 12)),
                     ),
@@ -898,8 +891,7 @@ class _ActionTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
-    this.accent = false,
-  });
+  }) : accent = false;
 
   final IconData icon;
   final String title;
@@ -1115,32 +1107,25 @@ class _MapPlaceholder extends StatelessWidget {
   final String detail;
 
   @override
-  Widget build(BuildContext context) => Container(
-        height: 250,
-        decoration: BoxDecoration(
-          color: const Color(0xFFE3ECE6),
-          borderRadius: BorderRadius.circular(20),
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.map_outlined, size: 54, color: _green),
+        const SizedBox(height: 12),
+        Text(label,
+            style: const TextStyle(
+                color: _dark, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          child: Text(detail,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _muted, fontSize: 12)),
         ),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.map_outlined, size: 54, color: _green),
-              const SizedBox(height: 12),
-              Text(label,
-                  style: const TextStyle(
-                      color: _dark, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 5),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18),
-                child: Text(detail,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: _muted, fontSize: 12)),
-              ),
-            ],
-          ),
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 class _StatusCard extends StatelessWidget {
