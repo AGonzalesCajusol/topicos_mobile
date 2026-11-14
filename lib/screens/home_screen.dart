@@ -3,13 +3,13 @@ import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import 'programming_detail_screen.dart';
 
-const _background = Color(0xFF10201C);
-const _surface = Color(0xFF182B26);
-const _border = Color(0xFF2C4A41);
-const _cream = Color(0xFFF4EFE3);
-const _muted = Color(0xFF9DB5AB);
-const _green = Color(0xFF7BE495);
-const _yellow = Color(0xFFFFD25E);
+const _background = Color(0xFFF7F9F7);
+const _surface = Color(0xFFFFFFFF);
+const _border = Color(0xFFE2E9E4);
+const _cream = Color(0xFF151B17);
+const _muted = Color(0xFF68746C);
+const _green = Color(0xFF168447);
+const _yellow = Color(0xFFB7791F);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: _green,
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(Icons.recycling_rounded, color: _background, size: 29),
+                        child: const Icon(Icons.recycling_rounded, color: Colors.white, size: 29),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF24483A), Color(0xFF182B26)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      gradient: const LinearGradient(colors: [Color(0xFFEAF5ED), Color(0xFFFFFFFF)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: _border),
                     ),
@@ -261,7 +261,7 @@ class _FilterButton extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(color: selected ? _background : _cream, fontSize: 12, fontWeight: FontWeight.w800),
+            style: TextStyle(color: selected ? Colors.white : _cream, fontSize: 12, fontWeight: FontWeight.w800),
           ),
         ),
       ),
