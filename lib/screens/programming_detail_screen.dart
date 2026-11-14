@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
+import '../theme/app_theme.dart';
 
-const _pageBackground = Color(0xFFF3F6FA);
-const _panel = Color(0xFFFFFFFF);
-const _panelBorder = Color(0xFFE1E8F0);
-const _primaryText = Color(0xFF1F2937);
-const _secondaryText = Color(0xFF64748B);
-const _accent = Color(0xFF1267B3);
-const _success = Color(0xFF16845B);
-const _warning = Color(0xFFB7791F);
+const _pageBackground = AppColors.background;
+const _panel = AppColors.surface;
+const _panelBorder = AppColors.border;
+const _primaryText = AppColors.text;
+const _secondaryText = AppColors.muted;
+const _accent = AppColors.green;
+const _success = AppColors.green;
+const _warning = AppColors.warning;
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
@@ -63,8 +64,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
     return Scaffold(
       backgroundColor: _pageBackground,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1267B3),
-        foregroundColor: Colors.white,
+        backgroundColor: _panel,
+        foregroundColor: _primaryText,
         elevation: 0,
         title: const Text(
           'Programación de hoy',
@@ -249,7 +250,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1674D1),
+                      backgroundColor: _accent,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
