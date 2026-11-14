@@ -1,53 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-void main() => runApp(const RsuApp());
+void main() => runApp(const DriverApp());
 
-// ---------- Paleta ----------
-const bg = Color(0xFF10201C);
-const bg2 = Color(0xFF0B1613);
-const card = Color(0xFF182B26);
-const line = Color(0xFF2C4A41);
-const cream = Color(0xFFF4EFE3);
-const muted = Color(0xFF9DB5AB);
-const green = Color(0xFF7BE495);
-const greenDark = Color(0xFF3FA863);
-const yellow = Color(0xFFFFD25E);
-const coral = Color(0xFFFF7A66);
-const blue = Color(0xFF5AA9FF);
-const ink = Color(0xFF0B1613);
+const _green = Color(0xFF2E9B65);
+const _dark = Color(0xFF14251F);
+const _muted = Color(0xFF718078);
+const _bg = Color(0xFFF4F7F5);
 
-TextStyle hand(double size, Color color) => GoogleFonts.caveat(
-  fontSize: size,
-  color: color,
-  fontWeight: FontWeight.w700,
-);
-
-TextStyle display(
-  double size,
-  Color color, {
-  FontWeight w = FontWeight.w800,
-  double? h,
-}) => GoogleFonts.bricolageGrotesque(
-  fontSize: size,
-  color: color,
-  fontWeight: w,
-  height: h,
-);
-
-class RsuApp extends StatelessWidget {
-  const RsuApp({super.key});
+class DriverApp extends StatelessWidget {
+  const DriverApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Conductor RSU',
       debugShowCheckedModeBanner: false,
-      title: 'RSU Reciclaje',
       theme: ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: bg,
-        colorScheme: const ColorScheme.dark(primary: green),
+        scaffoldBackgroundColor: _bg,
+        colorScheme: ColorScheme.fromSeed(seedColor: _green),
+        textTheme: GoogleFonts.interTextTheme(),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: _bg,
+          foregroundColor: _dark,
+          elevation: 0,
+          centerTitle: false,
+        ),
       ),
       home: const LoginScreen(),
     );
@@ -63,132 +42,115 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _user = TextEditingController();
-  final _pass = TextEditingController();
-  bool _hide = true;
-  bool _loading = false;
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  bool _hidePassword = true;
 
   @override
   void dispose() {
-    _user.dispose();
-    _pass.dispose();
+    _email.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  void _continue() {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    // TODO: llamar a tu API de autenticación aquí
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) setState(() => _loading = false);
+    // La autenticación se conectará al endpoint real cuando se confirme
+    // la ruta y el formato de respuesta del backend.
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: RadialGradient(
-            center: Alignment(0, -1.1),
-            radius: 1.3,
-            colors: [Color(0xFF1C3A31), bg, bg2],
-            stops: [0, .55, 1],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(26),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Form(
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _Hero(),
-                    const SizedBox(height: 8),
-                    Text('Hola,\nconductor', style: display(42, cream, h: 1.0)),
-                    Transform.rotate(
-                      angle: -0.03,
-                      child: Text('¡buen turno!', style: hand(44, green)),
+                    Container(
+                      height: 76,
+                      width: 76,
+                      decoration: BoxDecoration(
+                        color: _green.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Icon(Icons.local_shipping_rounded,
+                          color: _green, size: 42),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Ingresa con tu usuario para ver tu ruta del día.',
-                      style: display(15, muted, w: FontWeight.w500, h: 1.4),
+                    const SizedBox(height: 34),
+                    Text('Bienvenido, conductor',
+                        style: GoogleFonts.inter(
+                            fontSize: 29,
+                            fontWeight: FontWeight.w800,
+                            color: _dark)),
+                    const SizedBox(height: 9),
+                    const Text(
+                      'Ingresa para consultar tus programaciones y recorridos.',
+                      style: TextStyle(color: _muted, height: 1.5),
                     ),
-                    const SizedBox(height: 24),
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _label('Usuario'),
-                          TextFormField(
-                            controller: _user,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
-                            style: display(16, cream, w: FontWeight.w500),
-                            decoration: _deco(
-                              'Ingrese su usuario',
-                              Icons.person_rounded,
-                            ),
-                            validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Escribe tu usuario'
-                                : null,
-                          ),
-                          const SizedBox(height: 16),
-                          _label('Contraseña'),
-                          TextFormField(
-                            controller: _pass,
-                            obscureText: _hide,
-                            onFieldSubmitted: (_) => _login(),
-                            autofillHints: const [AutofillHints.password],
-                            style: display(16, cream, w: FontWeight.w500),
-                            decoration:
-                                _deco(
-                                  'Ingrese su contraseña',
-                                  Icons.lock_rounded,
-                                ).copyWith(
-                                  suffixIcon: IconButton(
-                                    tooltip: _hide ? 'Mostrar' : 'Ocultar',
-                                    onPressed: () =>
-                                        setState(() => _hide = !_hide),
-                                    icon: Icon(
-                                      _hide
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: muted,
-                                    ),
-                                  ),
-                                ),
-                            validator: (v) => (v == null || v.isEmpty)
-                                ? 'Escribe tu contraseña'
-                                : null,
-                          ),
-                          const SizedBox(height: 24),
-                          _PressButton(
-                            label: _loading ? 'Ingresando…' : 'Ingresar',
-                            onTap: _loading ? null : _login,
-                          ),
-                        ],
+                    const SizedBox(height: 34),
+                    const _FieldLabel('Correo electrónico'),
+                    TextFormField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      decoration: _inputDecoration(
+                          'correo@ejemplo.com', Icons.email_outlined),
+                      validator: (value) => value == null || value.trim().isEmpty
+                          ? 'Ingresa tu correo'
+                          : null,
+                    ),
+                    const SizedBox(height: 20),
+                    const _FieldLabel('Contraseña'),
+                    TextFormField(
+                      controller: _password,
+                      obscureText: _hidePassword,
+                      onFieldSubmitted: (_) => _continue(),
+                      decoration: _inputDecoration(
+                        'Ingresa tu contraseña',
+                        Icons.lock_outline_rounded,
+                      ).copyWith(
+                        suffixIcon: IconButton(
+                          onPressed: () =>
+                              setState(() => _hidePassword = !_hidePassword),
+                          icon: Icon(_hidePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined),
+                        ),
+                      ),
+                      validator: (value) => value == null || value.isEmpty
+                          ? 'Ingresa tu contraseña'
+                          : null,
+                    ),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: FilledButton(
+                        onPressed: _continue,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _green,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15)),
+                        ),
+                        child: const Text('Ingresar',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w700)),
                       ),
                     ),
                     const SizedBox(height: 28),
-                    Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            '¡a recorrer la ciudad!',
-                            style: hand(24, yellow),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Sistema de Gestión de Residuos Sólidos',
-                            textAlign: TextAlign.center,
-                            style: display(12.5, muted, w: FontWeight.w500),
-                          ),
-                        ],
-                      ),
+                    const Center(
+                      child: Text('Sistema de Gestión de Residuos Sólidos',
+                          style: TextStyle(color: _muted, fontSize: 12)),
                     ),
                   ],
                 ),
@@ -199,354 +161,493 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
 
-  Widget _label(String t) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(t, style: display(14, cream, w: FontWeight.w700)),
-  );
-
-  InputDecoration _deco(String hint, IconData icon) {
-    OutlineInputBorder b(Color c, [double w = 2]) => OutlineInputBorder(
-      borderRadius: BorderRadius.circular(16),
-      borderSide: BorderSide(color: c, width: w),
-    );
-    return InputDecoration(
+InputDecoration _inputDecoration(String hint, IconData icon) =>
+    InputDecoration(
       hintText: hint,
-      hintStyle: display(15, const Color(0xFF6F8A7F), w: FontWeight.w500),
-      prefixIcon: Icon(icon, color: muted),
+      prefixIcon: Icon(icon, color: _muted),
       filled: true,
-      fillColor: card,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
-      errorStyle: display(13, coral, w: FontWeight.w600),
-      border: b(line),
-      enabledBorder: b(line),
-      focusedBorder: b(green),
-      errorBorder: b(coral),
-      focusedErrorBorder: b(coral),
+      fillColor: Colors.white,
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE1E9E4))),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE1E9E4))),
+      focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _green, width: 1.5)),
     );
-  }
-}
 
-// ---------- Botón con efecto "presionable" ----------
-class _PressButton extends StatefulWidget {
-  const _PressButton({required this.label, required this.onTap});
-  final String label;
-  final VoidCallback? onTap;
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel(this.text);
+  final String text;
 
   @override
-  State<_PressButton> createState() => _PressButtonState();
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text,
+            style: const TextStyle(
+                color: _dark, fontWeight: FontWeight.w700, fontSize: 14)),
+      );
 }
 
-class _PressButtonState extends State<_PressButton> {
-  bool _down = false;
+class DriverHomeScreen extends StatefulWidget {
+  const DriverHomeScreen({super.key});
+
+  @override
+  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
+}
+
+class _DriverHomeScreenState extends State<DriverHomeScreen> {
+  int _selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final off = widget.onTap == null;
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _down = true),
-      onTapUp: (_) => setState(() => _down = false),
-      onTapCancel: () => setState(() => _down = false),
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 80),
-        height: 58,
-        width: double.infinity,
-        margin: EdgeInsets.only(top: _down ? 4 : 0),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: off ? green.withValues(alpha: .7) : green,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(color: greenDark, offset: Offset(0, _down ? 1 : 5)),
-          ],
-        ),
-        child: Text(widget.label, style: display(18, ink)),
+    final pages = [
+      const _DashboardTab(),
+      const _ScheduleTab(),
+      const _HistoryTab(),
+    ];
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Panel del conductor',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          IconButton(
+            tooltip: 'Cerrar sesión',
+            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const LoginScreen()),
+              (_) => false,
+            ),
+            icon: const Icon(Icons.logout_rounded),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-    );
-  }
-}
-
-// ---------- Hero con stickers ----------
-class _Hero extends StatelessWidget {
-  const _Hero();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 255,
-      width: double.infinity,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // chispas
-          Positioned(
-            right: 4,
-            top: 6,
-            child: CustomPaint(
-              size: const Size(44, 44),
-              painter: _SparkPainter(),
-            ),
-          ),
-          // hoja
-          Positioned(
-            right: 52,
-            top: 0,
-            child: Transform.rotate(
-              angle: 0.25,
-              child: CustomPaint(
-                size: const Size(70, 84),
-                painter: _LeafPainter(),
-              ),
-            ),
-          ),
-          // sello de reciclaje
-          Positioned(
-            left: 26,
-            top: 14,
-            child: Transform.rotate(
-              angle: -0.1,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: green,
-                  borderRadius: BorderRadius.circular(34),
-                  border: Border.all(color: Colors.white, width: 5),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black54,
-                      blurRadius: 18,
-                      offset: Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.recycling_rounded,
-                  size: 78,
-                  color: ink,
-                ),
-              ),
-            ),
-          ),
-          // washi tape
-          Positioned(
-            left: 56,
-            top: 4,
-            child: Transform.rotate(
-              angle: -0.18,
-              child: Container(
-                width: 56,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: yellow.withValues(alpha: .85),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ),
-          ),
-          // etiqueta
-          Positioned(
-            right: 0,
-            top: 100,
-            child: Transform.rotate(
-              angle: 0.1,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: yellow,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black45,
-                      blurRadius: 10,
-                      offset: Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Text('¡Juntos reciclamos!', style: hand(23, ink)),
-              ),
-            ),
-          ),
-          // tacho
-          Positioned(
-            left: 0,
-            bottom: 8,
-            child: Transform.rotate(
-              angle: -0.12,
-              child: CustomPaint(
-                size: const Size(72, 90),
-                painter: _BinPainter(),
-              ),
-            ),
-          ),
-          // camión
-          const Positioned(right: 0, bottom: 0, child: _Truck()),
+      body: SafeArea(child: pages[_selectedIndex]),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (value) =>
+            setState(() => _selectedIndex = value),
+        destinations: const [
+          NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home_rounded),
+              label: 'Inicio'),
+          NavigationDestination(
+              icon: Icon(Icons.calendar_month_outlined), label: 'Agenda'),
+          NavigationDestination(
+              icon: Icon(Icons.history_rounded), label: 'Historial'),
         ],
       ),
     );
   }
 }
 
-class _Truck extends StatefulWidget {
-  const _Truck();
-
-  @override
-  State<_Truck> createState() => _TruckState();
-}
-
-class _TruckState extends State<_Truck> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 3200),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _c.dispose();
-    super.dispose();
-  }
+class _DashboardTab extends StatelessWidget {
+  const _DashboardTab();
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-      builder: (_, child) => Transform.translate(
-        offset: Offset(-8 + 16 * _c.value, 0),
-        child: child,
-      ),
-      child: CustomPaint(size: const Size(150, 90), painter: _TruckPainter()),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 28),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _dark,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('TU JORNADA',
+                  style: TextStyle(
+                      color: Color(0xFF9CCBB0),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2)),
+              const SizedBox(height: 10),
+              const Text('¡Hola, conductor!',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 25,
+                      fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              const Text('Aquí puedes gestionar tu recorrido del día.',
+                  style: TextStyle(color: Color(0xFFD0DED6))),
+              const SizedBox(height: 18),
+              Row(
+                children: const [
+                  Icon(Icons.calendar_today_outlined,
+                      color: Color(0xFF9CCBB0), size: 17),
+                  SizedBox(width: 8),
+                  Text('Programaciones asignadas',
+                      style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 25),
+        const Text('Accesos rápidos',
+            style: TextStyle(
+                color: _dark, fontSize: 19, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 14),
+        _ActionTile(
+          icon: Icons.assignment_outlined,
+          title: 'Mis programaciones',
+          subtitle: 'Consulta tus fechas y horarios asignados',
+          onTap: () => _open(context, 'Mis programaciones',
+              'Aquí se mostrarán las programaciones asignadas al conductor.'),
+        ),
+        _ActionTile(
+          icon: Icons.today_outlined,
+          title: 'Programaciones del día',
+          subtitle: 'Revisa las actividades de hoy',
+          onTap: () => _open(context, 'Programaciones del día',
+              'Aquí se listarán las programaciones correspondientes a hoy.'),
+        ),
+        _ActionTile(
+          icon: Icons.fact_check_outlined,
+          title: 'Validar asistencias',
+          subtitle: 'Registra y consulta las asistencias',
+          onTap: () => _open(context, 'Validar asistencias',
+              'La validación se conectará con el servicio de asistencias.'),
+        ),
+        _ActionTile(
+          icon: Icons.route_outlined,
+          title: 'Recorrido en curso',
+          subtitle: 'Visualiza y registra tu ubicación durante la ruta',
+          accent: true,
+          onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const ActiveRouteScreen())),
+        ),
+        _ActionTile(
+          icon: Icons.flag_outlined,
+          title: 'Finalizar recorrido',
+          subtitle: 'Registra observaciones y confirma el cierre',
+          onTap: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const FinishRouteScreen())),
+        ),
+        _ActionTile(
+          icon: Icons.map_outlined,
+          title: 'Visualizar recorrido',
+          subtitle: 'Consulta la trayectoria registrada',
+          onTap: () => _open(context, 'Visualizar recorrido',
+              'Aquí se mostrará el mapa con la trayectoria del recorrido.'),
+        ),
+      ],
     );
   }
 }
 
-// ---------- Painters (stickers con borde blanco) ----------
-void _stickerBase(Canvas c, Path p) {
-  c.drawPath(
-    p,
-    Paint()
-      ..color = Colors.white
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 14
-      ..strokeJoin = StrokeJoin.round,
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.accent = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool accent;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        margin: const EdgeInsets.only(bottom: 11),
+        color: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
+            side: const BorderSide(color: Color(0xFFE8EEEA))),
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          leading: Container(
+            width: 47,
+            height: 47,
+            decoration: BoxDecoration(
+              color: accent
+                  ? _green.withValues(alpha: .14)
+                  : const Color(0xFFF0F5F2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: _green),
+          ),
+          title: Text(title,
+              style: const TextStyle(
+                  color: _dark, fontWeight: FontWeight.w700, fontSize: 14)),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(subtitle,
+                style: const TextStyle(color: _muted, fontSize: 12)),
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded, color: _muted),
+          onTap: onTap,
+        ),
+      );
+}
+
+class _ScheduleTab extends StatelessWidget {
+  const _ScheduleTab();
+
+  @override
+  Widget build(BuildContext context) => const _InfoPage(
+        title: 'Mis programaciones',
+        description:
+            'En esta sección aparecerán tus programaciones asignadas. La fecha y hora serán de solo lectura para el conductor.',
+        icon: Icons.calendar_month_outlined,
+      );
+}
+
+class _HistoryTab extends StatelessWidget {
+  const _HistoryTab();
+
+  @override
+  Widget build(BuildContext context) => const _InfoPage(
+        title: 'Historial de recorridos',
+        description:
+            'Aquí podrás consultar tus recorridos anteriores y abrir el detalle de cada trayectoria.',
+        icon: Icons.history_rounded,
+      );
+}
+
+class ActiveRouteScreen extends StatelessWidget {
+  const ActiveRouteScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Recorrido en curso')),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const _MapPlaceholder(
+                label: 'Mapa del recorrido',
+                detail: 'El mapa se habilitará con la ubicación GPS.'),
+            const SizedBox(height: 18),
+            const _StatusCard(
+                icon: Icons.gps_fixed_rounded,
+                title: 'Registro de ubicación',
+                detail:
+                    'La especificación solicita registrar la ubicación cada 5 segundos durante el recorrido.'),
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const FinishRouteScreen())),
+              icon: const Icon(Icons.flag_rounded),
+              label: const Text('Finalizar recorrido'),
+              style: FilledButton.styleFrom(
+                  backgroundColor: _green,
+                  minimumSize: const Size.fromHeight(52)),
+            ),
+          ],
+        ),
+      );
+}
+
+class FinishRouteScreen extends StatefulWidget {
+  const FinishRouteScreen({super.key});
+
+  @override
+  State<FinishRouteScreen> createState() => _FinishRouteScreenState();
+}
+
+class _FinishRouteScreenState extends State<FinishRouteScreen> {
+  final _observation = TextEditingController();
+
+  @override
+  void dispose() {
+    _observation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Finalizar recorrido')),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const _StatusCard(
+                icon: Icons.check_circle_outline_rounded,
+                title: 'Cierre de recorrido',
+                detail:
+                    'Antes de confirmar, registra cualquier observación sobre el servicio.'),
+            const SizedBox(height: 22),
+            const _FieldLabel('Observaciones'),
+            TextField(
+              controller: _observation,
+              maxLines: 5,
+              decoration: _inputDecoration(
+                  'Escribe una observación (opcional)',
+                  Icons.edit_note_rounded),
+              textCapitalization: TextCapitalization.sentences,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('¿Confirmar finalización?'),
+                  content: const Text(
+                      'Se enviará la solicitud de cierre del recorrido.'),
+                  actions: [
+                    TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('Cancelar')),
+                    FilledButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text(
+                                  'Pantalla lista; falta conectar el servicio de cierre.')),
+                        );
+                      },
+                      child: const Text('Confirmar'),
+                    ),
+                  ],
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                  backgroundColor: _green,
+                  minimumSize: const Size.fromHeight(52)),
+              child: const Text('Confirmar finalización'),
+            ),
+          ],
+        ),
+      );
+}
+
+class _InfoPage extends StatelessWidget {
+  const _InfoPage({
+    required this.title,
+    required this.description,
+    required this.icon,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: _green, size: 54),
+              const SizedBox(height: 16),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: _dark,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 21)),
+              const SizedBox(height: 9),
+              Text(description,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: _muted, height: 1.5)),
+            ],
+          ),
+        ),
+      );
+}
+
+class _MapPlaceholder extends StatelessWidget {
+  const _MapPlaceholder({required this.label, required this.detail});
+  final String label;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        height: 250,
+        decoration: BoxDecoration(
+          color: const Color(0xFFE3ECE6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.map_outlined, size: 54, color: _green),
+              const SizedBox(height: 12),
+              Text(label,
+                  style: const TextStyle(
+                      color: _dark, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 5),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Text(detail,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: _muted, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard(
+      {required this.icon, required this.title, required this.detail});
+  final IconData icon;
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(17),
+          border: Border.all(color: const Color(0xFFE5ECE7)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: _green, size: 25),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: _dark, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 5),
+                  Text(detail,
+                      style: const TextStyle(
+                          color: _muted, fontSize: 13, height: 1.45)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+void _open(BuildContext context, String title, String description) {
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: _InfoPage(
+          title: title,
+          description: description,
+          icon: Icons.construction_rounded,
+        ),
+      ),
+    ),
   );
-  c.drawPath(p, Paint()..color = Colors.white);
-}
-
-Paint _fill(Color c) => Paint()..color = c;
-Paint get _stroke => Paint()
-  ..color = ink
-  ..style = PaintingStyle.stroke
-  ..strokeWidth = 3
-  ..strokeJoin = StrokeJoin.round
-  ..strokeCap = StrokeCap.round;
-
-class _TruckPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    final box = RRect.fromLTRBR(4, 8, 92, 62, const Radius.circular(10));
-    final cab = Path()
-      ..moveTo(92, 22)
-      ..lineTo(122, 22)
-      ..lineTo(146, 44)
-      ..lineTo(146, 62)
-      ..lineTo(92, 62)
-      ..close();
-    final win = Path()
-      ..moveTo(100, 29)
-      ..lineTo(120, 29)
-      ..lineTo(136, 44)
-      ..lineTo(100, 44)
-      ..close();
-    final all = Path()
-      ..addRRect(box)
-      ..addPath(cab, Offset.zero)
-      ..addOval(Rect.fromCircle(center: const Offset(34, 66), radius: 12))
-      ..addOval(Rect.fromCircle(center: const Offset(116, 66), radius: 12));
-    _stickerBase(c, all);
-
-    c.drawRRect(box, _fill(blue));
-    c.drawRRect(box, _stroke);
-    c.drawPath(cab, _fill(green));
-    c.drawPath(cab, _stroke);
-    c.drawPath(win, _fill(ink));
-
-    final stripe = Paint()
-      ..color = Colors.white.withValues(alpha: .4)
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-    c.drawLine(const Offset(20, 26), const Offset(76, 26), stripe);
-    c.drawLine(const Offset(20, 38), const Offset(76, 38), stripe);
-
-    for (final x in [34.0, 116.0]) {
-      c.drawCircle(Offset(x, 66), 12, _fill(yellow));
-      c.drawCircle(Offset(x, 66), 12, _stroke);
-      c.drawCircle(Offset(x, 66), 4, _fill(ink));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-class _BinPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    final body = RRect.fromLTRBR(10, 24, 54, 80, const Radius.circular(8));
-    final lid = RRect.fromLTRBR(3, 12, 61, 28, const Radius.circular(8));
-    final all = Path()
-      ..addRRect(body)
-      ..addRRect(lid);
-    _stickerBase(c, all);
-    c.drawRRect(body, _fill(blue));
-    c.drawRRect(body, _stroke);
-    c.drawRRect(lid, _fill(yellow));
-    c.drawRRect(lid, _stroke);
-    for (final x in [24.0, 32.0, 40.0]) {
-      c.drawLine(Offset(x, 36), Offset(x, 68), _stroke..strokeWidth = 3.5);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-class _LeafPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    final leaf = Path()
-      ..moveTo(6, 78)
-      ..cubicTo(2, 40, 24, 8, 66, 4)
-      ..cubicTo(68, 44, 52, 74, 14, 82)
-      ..close();
-    _stickerBase(c, leaf);
-    c.drawPath(leaf, _fill(green));
-    c.drawPath(leaf, _stroke);
-    final vein = Path()
-      ..moveTo(12, 74)
-      ..cubicTo(26, 52, 40, 34, 56, 16);
-    c.drawPath(vein, _stroke);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
-}
-
-class _SparkPainter extends CustomPainter {
-  @override
-  void paint(Canvas c, Size s) {
-    Paint p(Color col) => Paint()
-      ..color = col
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    c.drawLine(const Offset(8, 14), const Offset(14, 20), p(coral));
-    c.drawLine(const Offset(24, 4), const Offset(24, 14), p(yellow));
-    c.drawLine(const Offset(38, 14), const Offset(31, 20), p(green));
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter old) => false;
 }
