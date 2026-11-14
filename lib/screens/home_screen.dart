@@ -10,7 +10,7 @@ const _border = AppColors.border;
 const _cream = AppColors.text;
 const _muted = AppColors.muted;
 const _green = AppColors.green;
-const _yellow = AppColors.muted;
+const _pending = AppColors.muted;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -329,7 +329,7 @@ class _ProgrammingCard extends StatelessWidget {
                       status,
                       textAlign: TextAlign.right,
                       style: const TextStyle(
-                        color: _yellow,
+                        color: _pending,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -388,7 +388,7 @@ class _ProgrammingCard extends StatelessWidget {
                       children: [
                         Icon(
                           attended ? Icons.check_circle_rounded : Icons.schedule_rounded,
-                          color: attended ? _green : _yellow,
+                          color: attended ? _green : _pending,
                           size: 17,
                         ),
                         const SizedBox(width: 8),
