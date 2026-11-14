@@ -107,7 +107,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       textInputAction: TextInputAction.next,
                       decoration: _inputDecoration(
                           'Ingresa tu DNI de 8 dígitos', Icons.badge_outlined),
-                      validator: (value) => value == null || !RegExp(r'^\d{8}
+                      validator: (value) =>
+                          value == null || !RegExp(r'^\d{8}$').hasMatch(value.trim())
+                              ? 'El DNI debe tener 8 dígitos'
+                              : null,
+                    ),
                     const SizedBox(height: 20),
                     const _FieldLabel('Contraseña'),
                     TextFormField(
