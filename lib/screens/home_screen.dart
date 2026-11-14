@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import 'programming_detail_screen.dart';
+import '../theme/app_theme.dart';
 
-const _background = Color(0xFFF7F9F7);
-const _surface = Color(0xFFFFFFFF);
-const _border = Color(0xFFE2E9E4);
-const _cream = Color(0xFF151B17);
-const _muted = Color(0xFF68746C);
-const _green = Color(0xFF168447);
-const _yellow = Color(0xFFB7791F);
+const _background = AppColors.background;
+const _surface = AppColors.surface;
+const _border = AppColors.border;
+const _cream = AppColors.text;
+const _muted = AppColors.muted;
+const _green = AppColors.green;
+const _yellow = AppColors.warning;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
