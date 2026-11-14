@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/api_service.dart';
+import 'theme/app_theme.dart';
 
 void main() => runApp(const RsuApp());
 
@@ -46,12 +47,7 @@ class RsuApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'RSU Reciclaje',
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: bg,
-        colorScheme: const ColorScheme.dark(primary: green),
-      ),
+      theme: AppTheme.light,
       home: const AuthGate(),
     );
   }
@@ -108,7 +104,16 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     if (_employee == null) {
-      return LoginScreen(onLogin: _onLogin);
+      // El login conserva su tema oscuro original; el resto de la app usa AppTheme.light.
+      return Theme(
+        data: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          scaffoldBackgroundColor: bg,
+          colorScheme: const ColorScheme.dark(primary: green),
+        ),
+        child: LoginScreen(onLogin: _onLogin),
+      );
     }
 
     return HomeScreen(employee: _employee!, onLogout: _onLogout);
