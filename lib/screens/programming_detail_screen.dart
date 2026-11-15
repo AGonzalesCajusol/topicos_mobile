@@ -20,6 +20,7 @@ const _accent = AppColors.green;
 const _success = AppColors.green;
 const _pending = AppColors.muted;
 const _mapTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const _minimumRouteMovementMeters = 15.0;
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
@@ -418,6 +419,20 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     }
   }
 
+  double _distanceBetweenMeters(LatLng first, LatLng second) {
+    const earthRadiusMeters = 6371000.0;
+    final latitude1 = first.latitude * math.pi / 180;
+    final latitude2 = second.latitude * math.pi / 180;
+    final latitudeDelta = (second.latitude - first.latitude) * math.pi / 180;
+    final longitudeDelta = (second.longitude - first.longitude) * math.pi / 180;
+    final sinLatitude = math.sin(latitudeDelta / 2);
+    final sinLongitude = math.sin(longitudeDelta / 2);
+    final value = sinLatitude * sinLatitude +
+        math.cos(latitude1) * math.cos(latitude2) *
+            sinLongitude * sinLongitude;
+    return earthRadiusMeters * 2 * math.asin(math.sqrt(value.clamp(0.0, 1.0)));
+  }
+
   Future<void> _refreshRoutePoints() async {
     if (!mounted || _routeLoading) return;
     _routeLoading = true;
@@ -434,7 +449,16 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final latitude = double.tryParse(raw['latitude']?.toString() ?? '');
           final longitude = double.tryParse(raw['longitude']?.toString() ?? '');
           if (latitude == null || longitude == null) continue;
-          points.add(LatLng(latitude, longitude));
+          final point = LatLng(latitude, longitude);
+
+          // Limpia también historiales antiguos: solo conserva un punto cuando
+          // existe un desplazamiento real respecto al último punto aceptado.
+          if (points.isNotEmpty &&
+              _distanceBetweenMeters(points.last, point) <=
+                  _minimumRouteMovementMeters) {
+            continue;
+          }
+          points.add(point);
         }
       }
 
@@ -456,7 +480,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         });
       }
 
-      if (_mapReady && routeChanged && points.isNotEmpty) {
+      if (_mapReady && points.isNotEmpty && (routeChanged || _routeIsFinished)) {
         if (_routeIsFinished && points.length > 1) {
           _mapController.fitCamera(
             CameraFit.coordinates(
@@ -531,9 +555,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       final stored = response['stored'] == true;
       setState(() {
         _locationError = null;
+        final minimumDistance =
+            (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '15';
         _locationSyncMessage = stored
             ? 'Ubicación guardada en el servidor.'
-            : 'Ubicación repetida (hasta 5 m). No se guardó otro punto.';
+            : 'Punto repetido o muy cercano (menos de ${minimumDistance} m). Se conserva el anterior.';
       });
 
       // Solo se incorpora al trazo lo que Laravel confirmó como guardado.
@@ -640,6 +666,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         color: _panel,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _panelBorder),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(.035),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -729,7 +763,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(13),
               child: SizedBox(
-                height: expanded ? 460 : (routeFinished ? 360 : 265),
+                height: expanded ? 330 : (routeFinished ? 360 : 265),
                 width: double.infinity,
                 child: Stack(
                   children: [
@@ -740,6 +774,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                         initialZoom: 14,
                         minZoom: 3,
                         maxZoom: 19,
+                        interactionOptions: const InteractionOptions(
+                          // El gesto vertical queda libre para desplazar la pantalla.
+                          // El usuario conserva zoom por doble toque o pellizco.
+                          flags: InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom,
+                        ),
                         onMapReady: () {
                           _mapReady = true;
                           if (_routeIsFinished && route.length > 1) {
@@ -876,6 +915,69 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _activeRouteFooter({
+    required bool canFinish,
+    required String message,
+  }) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(16, 11, 16, 9),
+        decoration: BoxDecoration(
+          color: _panel,
+          border: Border(top: BorderSide(color: _panelBorder)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(.045),
+              blurRadius: 18,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 54,
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _starting || _finishing || !canFinish ? null : _finishRoute,
+                icon: _finishing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.flag_rounded, size: 19),
+                label: Text(
+                  _finishing ? 'FINALIZANDO RECORRIDO…' : 'FINALIZAR RECORRIDO',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: .35),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _accent,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.surfaceSoft,
+                  disabledForegroundColor: AppColors.muted,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: _secondaryText, fontSize: 10, height: 1.3),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1051,11 +1153,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           }
 
           if (routeStarted && !routeFinished) {
-            return RefreshIndicator(
-              color: _accent,
-              backgroundColor: _panel,
-              onRefresh: _refreshDetail,
-              child: ListView(
+            return Column(
+              children: [
+                Expanded(
+                  child: RefreshIndicator(
+                    color: _accent,
+                    backgroundColor: _panel,
+                    onRefresh: _refreshDetail,
+                    child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
                 children: [
@@ -1111,28 +1216,12 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                     ),
                   ],
                   const SizedBox(height: 14),
-                  SizedBox(
-                    height: 54,
-                    child: ElevatedButton.icon(
-                      onPressed: _starting || _finishing || !canFinish ? null : _finishRoute,
-                      icon: _finishing
-                          ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.flag_rounded),
-                      label: Text(_finishing ? 'FINALIZANDO RECORRIDO…' : 'FINALIZAR RECORRIDO', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: .3)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: _accent,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.surfaceSoft,
-                        disabledForegroundColor: AppColors.muted,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                      ),
+                ],
                     ),
                   ),
-                  const SizedBox(height: 7),
-                  Text(actionMessage, textAlign: TextAlign.center, style: const TextStyle(color: _secondaryText, fontSize: 11, height: 1.4)),
-                ],
-              ),
+                ),
+                _activeRouteFooter(canFinish: canFinish, message: actionMessage),
+              ],
             );
           }
 
