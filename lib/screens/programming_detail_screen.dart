@@ -31,6 +31,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
   late Future<Map<String, dynamic>> _detailFuture;
   Timer? _availabilityTimer;
   bool _starting = false;
+  bool _finishing = false;
 
   @override
   void initState() {
@@ -88,6 +89,60 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
       );
     } finally {
       if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  Future<void> _finishRoute() async {
+    if (_finishing) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Finalizar recorrido'),
+        content: const Text(
+          '¿Confirmas que el recorrido ha terminado? Esta acción cerrará la programación.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Continuar recorrido'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Finalizar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _finishing = true);
+    try {
+      final response = await ProgrammingService.finish(widget.programmingId);
+      if (!mounted) return;
+
+      final message = response['message']?.toString()
+          ?? 'Recorrido finalizado correctamente.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      await _refreshDetail();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      await _refreshDetail();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo finalizar el recorrido. Inténtalo nuevamente.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _finishing = false);
     }
   }
 
@@ -175,10 +230,19 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
               .toList();
           final canStart = data['can_start_route'] == true;
           final routeStarted = data['route_started'] == true;
+          final routeFinished = data['route_finished'] == true;
+          final canFinish = data['can_finish_route'] == true;
           final startMessage = _value(
             data['start_message'],
-            canStart ? 'Puedes iniciar el recorrido.' : 'Aún no está habilitado el inicio del recorrido.',
+            canStart
+                ? 'Puedes iniciar el recorrido.'
+                : 'El inicio todavía no está habilitado.',
           );
+          final finishMessage = _value(
+            data['finish_message'],
+            'El recorrido debe finalizarse cuando termine el servicio.',
+          );
+          final actionMessage = routeStarted ? finishMessage : startMessage;
           final complete = data['complete'] == true;
 
           return RefreshIndicator(
@@ -303,9 +367,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: canStart && !_starting && !routeStarted
-                        ? _startRoute
-                        : null,
+                    onPressed: _starting || _finishing
+                        ? null
+                        : routeStarted
+                            ? (canFinish ? _finishRoute : null)
+                            : (canStart ? _startRoute : null),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: Colors.white,
@@ -319,11 +385,15 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                     child: Text(
                       _starting
                           ? 'INICIANDO RECORRIDO...'
-                          : routeStarted
-                              ? 'RECORRIDO INICIADO'
-                              : canStart
-                                  ? 'INICIAR RECORRIDO'
-                                  : 'INICIO NO DISPONIBLE',
+                          : _finishing
+                              ? 'FINALIZANDO RECORRIDO...'
+                              : routeFinished
+                                  ? 'RECORRIDO FINALIZADO'
+                                  : routeStarted
+                                      ? 'FINALIZAR RECORRIDO'
+                                      : canStart
+                                          ? 'INICIAR RECORRIDO'
+                                          : 'INICIO NO DISPONIBLE',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
@@ -334,7 +404,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  startMessage,
+                  actionMessage,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: _secondaryText,
