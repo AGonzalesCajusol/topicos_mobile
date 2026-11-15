@@ -664,9 +664,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: _panel,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _panelBorder),
         borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _panelBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.035),
