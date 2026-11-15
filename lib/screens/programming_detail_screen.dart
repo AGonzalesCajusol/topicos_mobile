@@ -578,7 +578,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       final a = math.pow(math.sin(latitudeDelta / 2), 2) +
           math.cos(previousLatitude) * math.cos(currentLatitude) *
               math.pow(math.sin(longitudeDelta / 2), 2);
-      total += earthRadiusKm * 2 * math.asin(math.sqrt(a));
+      final safeA = a.clamp(0.0, 1.0);
+      total += earthRadiusKm * 2 * math.asin(math.sqrt(safeA));
     }
     return total;
   }
@@ -973,7 +974,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         foregroundColor: _primaryText,
         elevation: 0,
         title: const Text(
-          'Programación de hoy',
+          'Detalle del recorrido',
           style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
         ),
         centerTitle: true,
@@ -1095,6 +1096,19 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                   if (_locationError != null) ...[
                     const SizedBox(height: 10),
                     Text(_locationError!, style: const TextStyle(color: Color(0xFFB45309), fontSize: 12)),
+                  ],
+                  if (_trackingAttempted && _trackingTimer == null && !_trackingStarting) ...[
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: _refreshLocation,
+                      icon: const Icon(Icons.my_location_rounded),
+                      label: const Text('REINTENTAR GPS'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: _success,
+                        side: const BorderSide(color: _success),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 14),
                   SizedBox(
