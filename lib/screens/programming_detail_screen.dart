@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -8,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import '../theme/app_theme.dart';
+
 
 const _pageBackground = AppColors.background;
 const _panel = AppColors.surface;
@@ -41,6 +43,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   final List<LatLng> _routePoints = [];
   bool _routeLoading = false;
   bool _routeLoaded = false;
+  bool _routeIsFinished = false;
   bool _starting = false;
   bool _finishing = false;
   bool _locating = false;
@@ -454,7 +457,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       }
 
       if (_mapReady && routeChanged && points.isNotEmpty) {
-        if (points.length > 1) {
+        if (_routeIsFinished && points.length > 1) {
           _mapController.fitCamera(
             CameraFit.coordinates(
               coordinates: points,
@@ -462,7 +465,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ),
           );
         } else {
-          _mapController.move(points.last, 16);
+          final liveCenter = _currentPosition == null
+              ? points.last
+              : LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+          _mapController.move(liveCenter, 16);
         }
       }
     } on ApiException catch (error) {
@@ -558,7 +564,26 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     }
   }
 
-  Widget _locationMapCard({required bool routeFinished}) {
+  double _routeDistanceKm(List<LatLng> points) {
+    if (points.length < 2) return 0;
+    const earthRadiusKm = 6371.0;
+    var total = 0.0;
+    for (var index = 1; index < points.length; index++) {
+      final previous = points[index - 1];
+      final current = points[index];
+      final latitudeDelta = (current.latitude - previous.latitude) * math.pi / 180;
+      final longitudeDelta = (current.longitude - previous.longitude) * math.pi / 180;
+      final previousLatitude = previous.latitude * math.pi / 180;
+      final currentLatitude = current.latitude * math.pi / 180;
+      final a = math.pow(math.sin(latitudeDelta / 2), 2) +
+          math.cos(previousLatitude) * math.cos(currentLatitude) *
+              math.pow(math.sin(longitudeDelta / 2), 2);
+      total += earthRadiusKm * 2 * math.asin(math.sqrt(a));
+    }
+    return total;
+  }
+
+  Widget _locationMapCard({required bool routeFinished, bool expanded = false}) {
     final position = _currentPosition;
     final route = List<LatLng>.unmodifiable(_routePoints);
     final mapCenter = position != null
@@ -663,7 +688,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           const SizedBox(height: 11),
           if (mapCenter == null)
             Container(
-              height: 210,
+              height: expanded ? 390 : 210,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.surfaceSoft,
@@ -703,7 +728,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(13),
               child: SizedBox(
-                height: 265,
+                height: expanded ? 460 : (routeFinished ? 360 : 265),
                 width: double.infinity,
                 child: Stack(
                   children: [
@@ -716,13 +741,17 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                         maxZoom: 19,
                         onMapReady: () {
                           _mapReady = true;
-                          if (route.length > 1) {
+                          if (_routeIsFinished && route.length > 1) {
                             _mapController.fitCamera(
                               CameraFit.coordinates(
                                 coordinates: route,
                                 padding: const EdgeInsets.all(42),
                               ),
                             );
+                          } else if (position != null) {
+                            _mapController.move(mapCenter, 16);
+                          } else if (route.isNotEmpty) {
+                            _mapController.move(route.last, 16);
                           }
                         },
                       ),
@@ -813,6 +842,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                 ),
             ],
           ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(child: _RouteMetric(label: 'DISTANCIA', value: '${_routeDistanceKm(route).toStringAsFixed(2)} km', icon: Icons.route_rounded)),
+              const SizedBox(width: 9),
+              Expanded(child: _RouteMetric(label: 'PUNTOS GPS', value: route.length.toString(), icon: Icons.my_location_rounded)),
+            ],
+          ),
           if (position != null && !routeFinished) ...[
             const SizedBox(height: 5),
             Text(
@@ -879,6 +916,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       );
       _stopLocationTracking();
       _stopRouteRefresh();
+      _routeIsFinished = true;
+      _routeLoaded = false;
+      _currentPosition = null;
+      await _refreshRoutePoints();
       await _refreshDetail();
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -983,6 +1024,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final canStart = data['can_start_route'] == true;
           final routeStarted = data['route_started'] == true;
           final routeFinished = data['route_finished'] == true;
+          _routeIsFinished = routeFinished;
           final canFinish = data['can_finish_route'] == true;
           final startMessage = _value(
             data['start_message'],
@@ -1005,6 +1047,79 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _startLocationTracking();
             });
+          }
+
+          if (routeStarted && !routeFinished) {
+            return RefreshIndicator(
+              color: _accent,
+              backgroundColor: _panel,
+              onRefresh: _refreshDetail,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _DateTile(date: _formattedDate(data['date']))),
+                      const SizedBox(width: 9),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _success.withOpacity(.12),
+                          borderRadius: BorderRadius.circular(13),
+                          border: Border.all(color: _success.withOpacity(.3)),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.radio_button_checked_rounded, color: _success, size: 13),
+                            SizedBox(width: 6),
+                            Text('INICIADO', style: TextStyle(color: _success, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .5)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _locationMapCard(routeFinished: false, expanded: true),
+                  const SizedBox(height: 12),
+                  _DetailPanel(
+                    children: [
+                      _InfoRow(icon: Icons.location_on_rounded, label: 'Zona', value: _value(data['zone'])),
+                      _InfoRow(icon: Icons.local_shipping_rounded, label: 'Vehículo', value: _value(data['vehicle'])),
+                      _InfoRow(icon: Icons.confirmation_number_rounded, label: 'Placa', value: _value(data['plate'])),
+                      _InfoRow(icon: Icons.access_time_filled_rounded, label: 'Turno', value: '${_value(data['shift'])} · ${_value(data['hours'], 'Horario no definido')}'),
+                      if (data['started_at'] != null)
+                        _InfoRow(icon: Icons.play_circle_outline_rounded, label: 'Inicio', value: _value(data['started_at'])),
+                    ],
+                  ),
+                  if (_locationError != null) ...[
+                    const SizedBox(height: 10),
+                    Text(_locationError!, style: const TextStyle(color: Color(0xFFB45309), fontSize: 12)),
+                  ],
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    height: 54,
+                    child: ElevatedButton.icon(
+                      onPressed: _starting || _finishing || !canFinish ? null : _finishRoute,
+                      icon: _finishing
+                          ? const SizedBox(width: 17, height: 17, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.flag_rounded),
+                      label: Text(_finishing ? 'FINALIZANDO RECORRIDO…' : 'FINALIZAR RECORRIDO', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: .3)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: AppColors.surfaceSoft,
+                        disabledForegroundColor: AppColors.muted,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(actionMessage, textAlign: TextAlign.center, style: const TextStyle(color: _secondaryText, fontSize: 11, height: 1.4)),
+                ],
+              ),
+            );
           }
 
           return RefreshIndicator(
@@ -1194,6 +1309,42 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _RouteMetric extends StatelessWidget {
+  const _RouteMetric({required this.label, required this.value, required this.icon});
+
+  final String label;
+  final String value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSoft,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: _success, size: 16),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: _secondaryText, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: .6)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(color: _primaryText, fontSize: 13, fontWeight: FontWeight.w900)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
