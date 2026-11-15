@@ -113,7 +113,6 @@ class ApiService {
         403 => data['message']?.toString() ?? 'No tienes autorización para ingresar.',
         422 => data['message']?.toString() ?? 'No se pudo validar la operación.',
         409 => data['message']?.toString() ?? 'El recorrido ya no se encuentra disponible.',
-        422 => data['message']?.toString() ?? 'No se pudo validar la operación.',
         429 => 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.',
         500 => 'Ocurrió un error en el servidor. Inténtalo más tarde.',
         _ => data['message']?.toString() ?? 'Ocurrió un error al comunicarse con el servidor.',
