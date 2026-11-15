@@ -44,7 +44,7 @@ void main() {
     test('ignores invalid GPS coordinates', () {
       final points = deduplicateConsecutiveRoutePoints([
         origin,
-        const LatLng(double.nan, -79.8300000),
+        LatLng(double.nan, -79.8300000),
         const LatLng(91, -79.8300000),
         const LatLng(-6.7798000, -79.8300000),
       ]);
