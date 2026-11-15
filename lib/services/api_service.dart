@@ -43,6 +43,36 @@ class ApiService {
     return _decode(response);
   }
 
+  static Future<Map<String, dynamic>> postAuthenticated(
+    String path, [
+    Map<String, dynamic> body = const {},
+  ]) async {
+    final token = await readToken();
+    if (token == null || token.isEmpty) {
+      throw const ApiException(
+        'Tu sesión ha finalizado. Inicia sesión nuevamente.',
+        statusCode: 401,
+      );
+    }
+
+    final response = await http
+        .post(
+          ApiConfig.endpoint(path),
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 25));
+
+    if (response.statusCode == 401) {
+      await clearToken();
+    }
+    return _decode(response);
+  }
+
   static Future<Map<String, dynamic>> get(String path) async {
     final token = await readToken();
     if (token == null || token.isEmpty) {
@@ -79,9 +109,11 @@ class ApiService {
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       final message = switch (response.statusCode) {
-        401 => 'El correo electrónico o la contraseña son incorrectos. Revisa tus datos e inténtalo nuevamente.',
+        401 => data['message']?.toString() ?? 'Tu sesión ha finalizado. Inicia sesión nuevamente.',
         403 => data['message']?.toString() ?? 'No tienes autorización para ingresar.',
-        422 => 'Revisa el correo electrónico y la contraseña ingresados.',
+        422 => data['message']?.toString() ?? 'No se pudo validar la operación.',
+        409 => data['message']?.toString() ?? 'El recorrido ya no se encuentra disponible.',
+        422 => data['message']?.toString() ?? 'No se pudo validar la operación.',
         429 => 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.',
         500 => 'Ocurrió un error en el servidor. Inténtalo más tarde.',
         _ => data['message']?.toString() ?? 'Ocurrió un error al comunicarse con el servidor.',
