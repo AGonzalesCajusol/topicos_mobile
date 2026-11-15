@@ -266,13 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           onTap: programmingId == null
                               ? () {}
                               : () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => ProgrammingDetailScreen(
-                                        programmingId: programmingId,
-                                      ),
-                                    ),
-                                  );
+                                  Navigator.of(context)
+                                      .push(
+                                        MaterialPageRoute<void>(
+                                          builder: (_) => ProgrammingDetailScreen(
+                                            programmingId: programmingId,
+                                          ),
+                                        ),
+                                      )
+                                      .then((_) {
+                                        if (mounted) _refresh();
+                                      });
                                 },
                         );
                       },
