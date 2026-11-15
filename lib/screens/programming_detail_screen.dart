@@ -997,13 +997,17 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      // Primero actualiza el estado de servidor a Finalizado. Así el FutureBuilder
+      // no puede volver a activar GPS ni el polling mientras carga el histórico.
       _stopLocationTracking();
       _stopRouteRefresh();
       _routeIsFinished = true;
       _routeLoaded = false;
       _currentPosition = null;
-      await _refreshRoutePoints();
       await _refreshDetail();
+      if (!mounted) return;
+      // La ruta histórica se consulta una sola vez después de confirmar el cierre.
+      await _refreshRoutePoints();
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
