@@ -37,6 +37,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   final MapController _mapController = MapController();
   Timer? _availabilityTimer;
   Timer? _trackingTimer;
+  Timer? _routeRefreshTimer;
+  final List<LatLng> _routePoints = [];
+  bool _routeLoading = false;
+  bool _routeLoaded = false;
   bool _starting = false;
   bool _finishing = false;
   bool _locating = false;
@@ -77,6 +81,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       _availabilityTimer?.cancel();
       _availabilityTimer = null;
       _stopLocationTracking();
+      _stopRouteRefresh();
     }
   }
 
@@ -85,6 +90,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     WidgetsBinding.instance.removeObserver(this);
     _availabilityTimer?.cancel();
     _stopLocationTracking();
+    _stopRouteRefresh();
     super.dispose();
   }
 
@@ -374,6 +380,86 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     _trackingTimer = null;
   }
 
+  void _stopRouteRefresh() {
+    _routeRefreshTimer?.cancel();
+    _routeRefreshTimer = null;
+  }
+
+  void _syncRouteRefresh(bool routeStarted, bool routeFinished) {
+    if (!routeStarted) {
+      _stopRouteRefresh();
+      return;
+    }
+
+    if (routeFinished || !_appIsForeground) {
+      _stopRouteRefresh();
+      if (routeFinished && !_routeLoaded && !_routeLoading) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _refreshRoutePoints();
+        });
+      }
+      return;
+    }
+
+    if (_routeRefreshTimer == null) {
+      _refreshRoutePoints();
+      _routeRefreshTimer = Timer.periodic(
+        const Duration(seconds: 5),
+        (_) => _refreshRoutePoints(),
+      );
+    }
+  }
+
+  Future<void> _refreshRoutePoints() async {
+    if (!mounted || _routeLoading) return;
+    _routeLoading = true;
+
+    try {
+      final response = await ProgrammingService.routeLocations(widget.programmingId);
+      final rawData = response['data'];
+      final rawLocations = rawData is Map ? rawData['locations'] : null;
+      final points = <LatLng>[];
+
+      if (rawLocations is List) {
+        for (final raw in rawLocations) {
+          if (raw is! Map) continue;
+          final latitude = double.tryParse(raw['latitude']?.toString() ?? '');
+          final longitude = double.tryParse(raw['longitude']?.toString() ?? '');
+          if (latitude == null || longitude == null) continue;
+          points.add(LatLng(latitude, longitude));
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _routePoints
+          ..clear()
+          ..addAll(points);
+        _routeLoaded = true;
+      });
+
+      if (_mapReady && points.isNotEmpty) {
+        if (points.length > 1) {
+          _mapController.fitCamera(
+            CameraFit.coordinates(
+              coordinates: points,
+              padding: const EdgeInsets.all(42),
+            ),
+          );
+        } else {
+          _mapController.move(points.last, 16);
+        }
+      }
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _locationSyncMessage = error.message);
+    } catch (_) {
+      // El mapa conserva los puntos que ya había cargado.
+    } finally {
+      _routeLoading = false;
+    }
+  }
+
   Future<void> _refreshLocation() async {
     if (_trackingTimer == null) {
       await _startLocationTracking();
@@ -454,8 +540,55 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     }
   }
 
-  Widget _locationMapCard() {
+  Widget _locationMapCard({required bool routeFinished}) {
     final position = _currentPosition;
+    final route = List<LatLng>.unmodifiable(_routePoints);
+    final mapCenter = position != null
+        ? LatLng(position.latitude, position.longitude)
+        : route.isNotEmpty
+            ? route.last
+            : null;
+
+    Widget pointMarker(Color color, IconData icon) => Container(
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 3),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.2),
+                blurRadius: 7,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: Colors.white, size: 17),
+        );
+
+    final markers = <Marker>[];
+    if (route.isNotEmpty) {
+      markers.add(
+        Marker(
+          point: route.first,
+          width: 36,
+          height: 36,
+          child: pointMarker(_success, Icons.flag_rounded),
+        ),
+      );
+      if (route.length > 1) {
+        markers.add(
+          Marker(
+            point: route.last,
+            width: 38,
+            height: 38,
+            child: pointMarker(
+              routeFinished ? const Color(0xFF2563EB) : const Color(0xFFF59E0B),
+              routeFinished ? Icons.flag_rounded : Icons.navigation_rounded,
+            ),
+          ),
+        );
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(13),
@@ -476,16 +609,16 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                   color: _success.withOpacity(.1),
                   borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(Icons.my_location_rounded, color: _success, size: 19),
+                child: const Icon(Icons.route_rounded, color: _success, size: 19),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Tu ubicación actual',
-                      style: TextStyle(
+                    Text(
+                      routeFinished ? 'Recorrido realizado' : 'Recorrido en tiempo real',
+                      style: const TextStyle(
                         color: _primaryText,
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
@@ -493,126 +626,119 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _trackingTimer != null
-                          ? 'Enviando GPS cada 5 segundos'
-                          : 'Seguimiento GPS pausado',
+                      routeFinished
+                          ? 'Historial de ubicaciones registradas'
+                          : 'Actualizando la ruta cada 5 segundos',
                       style: const TextStyle(color: _secondaryText, fontSize: 10),
                     ),
                   ],
                 ),
               ),
-              IconButton(
-                tooltip: 'Actualizar ubicación',
-                onPressed: _sendingLocation ? null : _refreshLocation,
-                icon: const Icon(Icons.refresh_rounded, color: _success),
-              ),
+              if (!routeFinished)
+                IconButton(
+                  tooltip: 'Actualizar recorrido',
+                  onPressed: _routeLoading ? null : _refreshRoutePoints,
+                  icon: const Icon(Icons.refresh_rounded, color: _success),
+                ),
             ],
           ),
           const SizedBox(height: 11),
-          if (_locating)
+          if (mapCenter == null)
             Container(
-              height: 190,
+              height: 210,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.surfaceSoft,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: _success),
-                    SizedBox(height: 12),
-                    Text(
-                      'Obteniendo tu ubicación...',
-                      style: TextStyle(color: _secondaryText, fontSize: 12),
-                    ),
-                  ],
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _routeLoading ? Icons.sync_rounded : Icons.route_outlined,
+                        color: _secondaryText,
+                        size: 30,
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        _routeLoading
+                            ? 'Cargando los puntos del recorrido...'
+                            : routeFinished
+                                ? 'Este recorrido no tiene ubicaciones GPS guardadas.'
+                                : 'Esperando la primera ubicación confirmada por el servidor.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: _secondaryText,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            )
-          else if (position == null)
-            Container(
-              height: 190,
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.location_off_rounded, color: _secondaryText, size: 30),
-                  const SizedBox(height: 9),
-                  Text(
-                    _locationError ?? 'Aún no se ha podido obtener tu ubicación.',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: _secondaryText,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _refreshLocation,
-                    icon: const Icon(Icons.gps_fixed_rounded, size: 17),
-                    label: const Text('Intentar nuevamente'),
-                  ),
-                ],
               ),
             )
           else
             ClipRRect(
               borderRadius: BorderRadius.circular(13),
               child: SizedBox(
-                height: 245,
+                height: 265,
                 width: double.infinity,
                 child: Stack(
                   children: [
                     FlutterMap(
                       mapController: _mapController,
                       options: MapOptions(
-                        initialCenter: LatLng(position.latitude, position.longitude),
-                        initialZoom: 16,
+                        initialCenter: mapCenter,
+                        initialZoom: 14,
                         minZoom: 3,
                         maxZoom: 19,
-                        onMapReady: () => _mapReady = true,
+                        onMapReady: () {
+                          _mapReady = true;
+                          if (route.length > 1) {
+                            _mapController.fitCamera(
+                              CameraFit.coordinates(
+                                coordinates: route,
+                                padding: const EdgeInsets.all(42),
+                              ),
+                            );
+                          }
+                        },
                       ),
                       children: [
                         TileLayer(
                           urlTemplate: _mapTileUrl,
                           userAgentPackageName: 'com.example.doctor',
                         ),
-                        MarkerLayer(
-                          markers: [
-                            Marker(
-                              point: LatLng(position.latitude, position.longitude),
-                              width: 48,
-                              height: 48,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: _success,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 4),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(.2),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
+                        if (route.length > 1)
+                          PolylineLayer(
+                            polylines: [
+                              Polyline(
+                                points: route,
+                                strokeWidth: 5,
+                                color: _success,
+                              ),
+                            ],
+                          ),
+                        if (markers.isNotEmpty)
+                          MarkerLayer(markers: markers),
+                        if (position != null && !routeFinished)
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(position.latitude, position.longitude),
+                                width: 44,
+                                height: 44,
+                                child: pointMarker(
+                                  const Color(0xFFF59E0B),
                                   Icons.navigation_rounded,
-                                  color: Colors.white,
-                                  size: 22,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                     Positioned(
@@ -634,10 +760,45 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                 ),
               ),
             ),
-          if (position != null && !_locating) ...[
-            const SizedBox(height: 9),
+          const SizedBox(height: 9),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${route.length} puntos aceptados por el servidor',
+                  style: const TextStyle(
+                    color: _primaryText,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              if (!routeFinished)
+                const Text(
+                  'EN VIVO',
+                  style: TextStyle(
+                    color: _success,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                )
+              else
+                const Text(
+                  'HISTÓRICO',
+                  style: TextStyle(
+                    color: _secondaryText,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: .7,
+                  ),
+                ),
+            ],
+          ),
+          if (position != null && !routeFinished) ...[
+            const SizedBox(height: 5),
             Text(
-              'Lat. ${position.latitude.toStringAsFixed(5)}  ·  Lon. ${position.longitude.toStringAsFixed(5)}',
+              'GPS actual: ${position.latitude.toStringAsFixed(5)} · ${position.longitude.toStringAsFixed(5)}',
               style: const TextStyle(
                 color: _secondaryText,
                 fontSize: 10,
@@ -699,6 +860,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         SnackBar(content: Text(message)),
       );
       _stopLocationTracking();
+      _stopRouteRefresh();
       await _refreshDetail();
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -817,6 +979,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final actionMessage = routeStarted ? finishMessage : startMessage;
           final complete = data['complete'] == true;
 
+          _syncRouteRefresh(routeStarted, routeFinished);
+
           if (routeStarted && !routeFinished &&
               _appIsForeground && _trackingTimer == null &&
               !_trackingStarting) {
@@ -847,9 +1011,9 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                   present: (data['present_count'] as num?)?.toInt() ?? 0,
                   total: people.length,
                 ),
-                if (routeStarted && !routeFinished) ...[
+                if (routeStarted) ...[
                   const SizedBox(height: 14),
-                  _locationMapCard(),
+                  _locationMapCard(routeFinished: routeFinished),
                 ],
                 const SizedBox(height: 14),
                 _DetailPanel(
