@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../lib/utils/route_points.dart';
+import 'package:doctor/utils/route_points.dart';
 
 void main() {
   group('deduplicateConsecutiveRoutePoints', () {
