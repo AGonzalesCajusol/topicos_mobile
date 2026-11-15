@@ -534,10 +534,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       if (!mounted) return;
 
       final stored = response['stored'] == true;
+      final minimumDistance =
+          (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '15';
       setState(() {
         _locationError = null;
-        final minimumDistance =
-            (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '15';
         _locationSyncMessage = stored
             ? 'Ubicación guardada en el servidor.'
             : 'Punto repetido o muy cercano (menos de ${minimumDistance} m). Se conserva el anterior.';
