@@ -703,7 +703,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           const SizedBox(height: 11),
           if (mapCenter == null)
             Container(
-              height: expanded ? 390 : 210,
+              height: expanded ? 330 : 210,
               width: double.infinity,
               decoration: BoxDecoration(
                 color: AppColors.surfaceSoft,
