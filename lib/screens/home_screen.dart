@@ -28,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _todayOnly = true;
+  String _routeFilter = 'Todos';
   late Future<Map<String, dynamic>> _programmingFuture;
   bool _loggingOut = false;
 
@@ -47,8 +48,14 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_todayOnly == today) return;
     setState(() {
       _todayOnly = today;
+      _routeFilter = 'Todos';
       _loadProgramaciones();
     });
+  }
+
+  void _changeRouteFilter(String filter) {
+    if (_routeFilter == filter) return;
+    setState(() => _routeFilter = filter);
   }
 
   Future<void> _refresh() async {
@@ -149,11 +156,32 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(child: _FilterButton(label: 'Programaciones de hoy', selected: _todayOnly, onTap: () => _changeFilter(true))),
                       const SizedBox(width: 9),
-                      Expanded(child: _FilterButton(label: 'Todas las programaciones', selected: !_todayOnly, onTap: () => _changeFilter(false))),
+                      Expanded(child: _FilterButton(label: 'Todos mis recorridos', selected: !_todayOnly, onTap: () => _changeFilter(false))),
                     ],
                   ),
                 ),
               ),
+              if (!_todayOnly)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  sliver: SliverToBoxAdapter(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final filter in const ['Todos', 'Pendientes', 'En curso', 'Finalizados']) ...[
+                            _FilterButton(
+                              label: filter,
+                              selected: _routeFilter == filter,
+                              onTap: () => _changeRouteFilter(filter),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               FutureBuilder<Map<String, dynamic>>(
                 future: _programmingFuture,
                 builder: (context, snapshot) {
@@ -187,15 +215,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   final response = snapshot.data ?? {};
                   final items = (response['data'] as List?) ?? [];
-                  if (items.isEmpty) {
+                  final filteredItems = items.where((raw) {
+                    if (_todayOnly || _routeFilter == 'Todos') return true;
+                    if (raw is! Map) return false;
+                    final routeStarted = raw['route_started'] == true;
+                    final routeFinished = raw['route_finished'] == true;
+                    switch (_routeFilter) {
+                      case 'En curso':
+                        return routeStarted && !routeFinished;
+                      case 'Finalizados':
+                        return routeFinished;
+                      case 'Pendientes':
+                        return !routeStarted && !routeFinished;
+                      default:
+                        return true;
+                    }
+                  }).toList();
+
+                  if (filteredItems.isEmpty) {
                     return SliverFillRemaining(
                       hasScrollBody: false,
                       child: _EmptyState(
                         icon: Icons.event_available_rounded,
-                        title: _todayOnly ? 'Hoy no tienes recorridos' : 'Aún no tienes programaciones',
-                        message: _todayOnly
-                            ? 'No hay recorridos asignados para el día de hoy.'
-                            : 'Cuando administración te asigne un recorrido, aparecerá en esta sección.',
+                        title: items.isEmpty
+                            ? (_todayOnly ? 'Hoy no tienes recorridos' : 'Aún no tienes recorridos')
+                            : 'No hay recorridos en este filtro',
+                        message: items.isEmpty
+                            ? (_todayOnly
+                                ? 'No hay recorridos asignados para el día de hoy.'
+                                : 'Cuando administración te asigne un recorrido, aparecerá en esta sección.')
+                            : 'Prueba con otro estado para consultar tus recorridos.',
                         action: 'Actualizar',
                         onTap: () => setState(_loadProgramaciones),
                       ),
@@ -205,10 +254,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   return SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                     sliver: SliverList.separated(
-                      itemCount: items.length,
+                      itemCount: filteredItems.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        final item = Map<String, dynamic>.from(items[index] as Map);
+                        final item = Map<String, dynamic>.from(filteredItems[index] as Map);
                         final programmingId = int.tryParse(item['id'].toString());
                         return _ProgrammingCard(
                           item: item,
