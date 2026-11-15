@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/route_points.dart';
 
 
 const _pageBackground = AppColors.background;
@@ -20,7 +21,6 @@ const _accent = AppColors.green;
 const _success = AppColors.green;
 const _pending = AppColors.muted;
 const _mapTileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const _minimumRouteMovementMeters = 15.0;
 
 class ProgrammingDetailScreen extends StatefulWidget {
   const ProgrammingDetailScreen({
@@ -419,20 +419,6 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     }
   }
 
-  double _distanceBetweenMeters(LatLng first, LatLng second) {
-    const earthRadiusMeters = 6371000.0;
-    final latitude1 = first.latitude * math.pi / 180;
-    final latitude2 = second.latitude * math.pi / 180;
-    final latitudeDelta = (second.latitude - first.latitude) * math.pi / 180;
-    final longitudeDelta = (second.longitude - first.longitude) * math.pi / 180;
-    final sinLatitude = math.sin(latitudeDelta / 2);
-    final sinLongitude = math.sin(longitudeDelta / 2);
-    final value = sinLatitude * sinLatitude +
-        math.cos(latitude1) * math.cos(latitude2) *
-            sinLongitude * sinLongitude;
-    return earthRadiusMeters * 2 * math.asin(math.sqrt(value.clamp(0.0, 1.0)));
-  }
-
   Future<void> _refreshRoutePoints() async {
     if (!mounted || _routeLoading) return;
     _routeLoading = true;
@@ -441,7 +427,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       final response = await ProgrammingService.routeLocations(widget.programmingId);
       final rawData = response['data'];
       final rawLocations = rawData is Map ? rawData['locations'] : null;
-      final points = <LatLng>[];
+      final rawPoints = <LatLng>[];
 
       if (rawLocations is List) {
         for (final raw in rawLocations) {
@@ -449,18 +435,13 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final latitude = double.tryParse(raw['latitude']?.toString() ?? '');
           final longitude = double.tryParse(raw['longitude']?.toString() ?? '');
           if (latitude == null || longitude == null) continue;
-          final point = LatLng(latitude, longitude);
-
-          // Limpia también historiales antiguos: solo conserva un punto cuando
-          // existe un desplazamiento real respecto al último punto aceptado.
-          if (points.isNotEmpty &&
-              _distanceBetweenMeters(points.last, point) <=
-                  _minimumRouteMovementMeters) {
-            continue;
-          }
-          points.add(point);
+          rawPoints.add(LatLng(latitude, longitude));
         }
       }
+
+      // Limpia también historiales antiguos. Solo conserva una lectura nueva
+      // cuando existe desplazamiento real respecto al último punto aceptado.
+      final points = deduplicateConsecutiveRoutePoints(rawPoints);
 
       if (!mounted) return;
       final routeChanged = points.length != _routePoints.length ||
