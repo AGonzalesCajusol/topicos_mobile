@@ -345,7 +345,7 @@ class _ProgrammingCard extends StatelessWidget {
     final status = routeFinished
         ? 'Finalizado'
         : routeStarted
-            ? 'En curso'
+            ? 'Iniciado'
             : text(item['status'], 'Programado');
     final statusColor = routeStarted && !routeFinished ? _green : _pending;
     final ready = item['can_start_route'] == true;
