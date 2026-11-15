@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/api_service.dart';
@@ -27,11 +29,66 @@ class ProgrammingDetailScreen extends StatefulWidget {
 
 class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
   late Future<Map<String, dynamic>> _detailFuture;
+  Timer? _availabilityTimer;
+  bool _starting = false;
 
   @override
   void initState() {
     super.initState();
     _loadDetail();
+
+    // Actualiza el permiso mientras la pantalla está abierta, para habilitar
+    // el botón al llegar la hora de inicio sin exigir que el usuario recargue.
+    _availabilityTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _refreshDetail(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _availabilityTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refreshDetail() async {
+    if (!mounted) return;
+    setState(_loadDetail);
+    try {
+      await _detailFuture;
+    } catch (_) {
+      // La pantalla muestra el error si la consulta no se completa.
+    }
+  }
+
+  Future<void> _startRoute() async {
+    if (_starting) return;
+
+    setState(() => _starting = true);
+    try {
+      final response = await ProgrammingService.start(widget.programmingId);
+      if (!mounted) return;
+
+      final message = response['message']?.toString()
+          ?? 'Recorrido iniciado correctamente.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      await _refreshDetail();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+      await _refreshDetail();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo iniciar el recorrido. Inténtalo nuevamente.')),
+      );
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
   }
 
   void _loadDetail() {
@@ -117,6 +174,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
               .map((person) => _value(person['name']))
               .toList();
           final canStart = data['can_start_route'] == true;
+          final routeStarted = data['route_started'] == true;
+          final startMessage = _value(
+            data['start_message'],
+            canStart ? 'Puedes iniciar el recorrido.' : 'Aún no está habilitado el inicio del recorrido.',
+          );
           final complete = data['complete'] == true;
 
           return RefreshIndicator(
@@ -241,25 +303,28 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 SizedBox(
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: () {
-                      final message = canStart
-                          ? 'El detalle está disponible. Falta conectar el endpoint para iniciar el recorrido.'
-                          : 'El recorrido se habilitará cuando el equipo complete su asistencia.';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(message)),
-                      );
-                    },
+                    onPressed: canStart && !_starting && !routeStarted
+                        ? _startRoute
+                        : null,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _accent,
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: AppColors.surfaceSoft,
+                      disabledForegroundColor: AppColors.muted,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(13),
                       ),
                     ),
-                    child: const Text(
-                      'INICIAR RECORRIDO',
-                      style: TextStyle(
+                    child: Text(
+                      _starting
+                          ? 'INICIANDO RECORRIDO...'
+                          : routeStarted
+                              ? 'RECORRIDO INICIADO'
+                              : canStart
+                                  ? 'INICIAR RECORRIDO'
+                                  : 'INICIO NO DISPONIBLE',
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w900,
                         letterSpacing: .3,
@@ -269,11 +334,13 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  canStart
-                      ? 'El equipo cumple las condiciones de asistencia.'
-                      : 'Falta registrar la asistencia de todo el personal.',
+                  startMessage,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: _secondaryText, fontSize: 11),
+                  style: const TextStyle(
+                    color: _secondaryText,
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
