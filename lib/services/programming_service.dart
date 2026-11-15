@@ -9,4 +9,7 @@ class ProgrammingService {
 
   static Future<Map<String, dynamic>> detail(int id) =>
       ApiService.get('conductor/programaciones/$id');
+
+  static Future<Map<String, dynamic>> start(int id) =>
+      ApiService.postAuthenticated('conductor/programaciones/$id/iniciar');
 }
