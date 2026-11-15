@@ -111,8 +111,87 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
     final people = (data['people'] as List? ?? []);
     final total = people.length;
     final present = (data['present_count'] as num?)?.toInt() ?? 0;
-    final pending = (total - present).clamp(0, total);
-    final allAttended = data['complete'] == true;
+    final missingPeople = people
+        .whereType<Map>()
+        .where((person) => person['attended'] != true)
+        .map((person) => person['name']?.toString() ?? 'Personal sin nombre')
+        .toList();
+    final allAttended = data['complete'] == true &&
+        people.isNotEmpty &&
+        missingPeople.isEmpty;
+
+    // Protección adicional en Flutter: aun con datos antiguos en pantalla,
+    // jamás se envía la petición de inicio si falta una asistencia.
+    if (!allAttended) {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: _panel,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: _panelBorder),
+          ),
+          title: const Text(
+            'Personal pendiente',
+            style: TextStyle(
+              color: _primaryText,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'No puedes iniciar el recorrido hasta que todo el personal asignado registre su asistencia.',
+                style: TextStyle(
+                  color: _secondaryText,
+                  fontSize: 13,
+                  height: 1.45,
+                ),
+              ),
+              if (missingPeople.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ...missingPeople.map(
+                  (name) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          color: Color(0xFFD98B24),
+                          size: 17,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              color: _primaryText,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Entendido'),
+            ),
+          ],
+        ),
+      );
+      return false;
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -142,7 +221,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
             const SizedBox(width: 11),
             const Expanded(
               child: Text(
-                'Confirmar inicio',
+                'Todo el personal ha asistido',
                 style: TextStyle(
                   color: _primaryText,
                   fontSize: 17,
@@ -182,13 +261,9 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            Text(
-              allAttended
-                  ? 'Todo el personal ha registrado su asistencia. Puedes iniciar el recorrido.'
-                  : total == 0
-                      ? 'No hay personal registrado en esta programación. Puedes continuar con el inicio del recorrido.'
-                      : 'Hay $pending ${pending == 1 ? 'persona pendiente' : 'personas pendientes'} de asistencia. Puedes iniciar el recorrido, pero verifica que el equipo esté listo.',
-              style: const TextStyle(
+            const Text(
+              'Todo el personal asignado ha registrado su asistencia. Puedes iniciar el recorrido.',
+              style: TextStyle(
                 color: _secondaryText,
                 fontSize: 13,
                 height: 1.45,
