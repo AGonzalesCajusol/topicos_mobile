@@ -514,6 +514,9 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ? 'Ubicación guardada en el servidor.'
             : 'Ubicación repetida (hasta 5 m). No se guardó otro punto.';
       });
+
+      // Solo se incorpora al trazo lo que Laravel confirmó como guardado.
+      if (stored) await _refreshRoutePoints();
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() {
