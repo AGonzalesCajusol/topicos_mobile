@@ -45,6 +45,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   bool _finishing = false;
   bool _locating = false;
   bool _trackingStarting = false;
+  bool _trackingAttempted = false;
   bool _sendingLocation = false;
   bool _mapReady = false;
   bool _appIsForeground = true;
@@ -72,6 +73,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _appIsForeground = true;
+      _trackingAttempted = false;
       _startAvailabilityRefresh();
       _refreshDetail();
     } else if (state == AppLifecycleState.inactive ||
@@ -81,6 +83,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       _availabilityTimer?.cancel();
       _availabilityTimer = null;
       _stopLocationTracking();
+      _trackingAttempted = false;
       _stopRouteRefresh();
     }
   }
@@ -321,12 +324,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     return result == true;
   }
 
-  Future<void> _startLocationTracking() async {
+  Future<void> _startLocationTracking({bool retry = false}) async {
     if (!mounted || !_appIsForeground ||
-        _trackingTimer != null || _trackingStarting) {
+        _trackingTimer != null || _trackingStarting ||
+        (_trackingAttempted && !retry)) {
       return;
     }
 
+    _trackingAttempted = true;
     _trackingStarting = true;
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -431,14 +436,24 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       }
 
       if (!mounted) return;
-      setState(() {
-        _routePoints
-          ..clear()
-          ..addAll(points);
-        _routeLoaded = true;
-      });
+      final routeChanged = points.length != _routePoints.length ||
+          List.generate(
+            points.length < _routePoints.length ? points.length : _routePoints.length,
+            (index) => index,
+          ).any((index) =>
+              points[index].latitude != _routePoints[index].latitude ||
+              points[index].longitude != _routePoints[index].longitude);
 
-      if (_mapReady && points.isNotEmpty) {
+      if (routeChanged || !_routeLoaded) {
+        setState(() {
+          _routePoints
+            ..clear()
+            ..addAll(points);
+          _routeLoaded = true;
+        });
+      }
+
+      if (_mapReady && routeChanged && points.isNotEmpty) {
         if (points.length > 1) {
           _mapController.fitCamera(
             CameraFit.coordinates(
@@ -462,7 +477,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
 
   Future<void> _refreshLocation() async {
     if (_trackingTimer == null) {
-      await _startLocationTracking();
+      await _startLocationTracking(retry: true);
     } else {
       await _captureAndSendLocation();
     }
