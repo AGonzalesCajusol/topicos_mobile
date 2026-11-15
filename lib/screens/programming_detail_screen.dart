@@ -31,23 +31,33 @@ class ProgrammingDetailScreen extends StatefulWidget {
   State<ProgrammingDetailScreen> createState() => _ProgrammingDetailScreenState();
 }
 
-class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
+class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
+    with WidgetsBindingObserver {
   late Future<Map<String, dynamic>> _detailFuture;
+  final MapController _mapController = MapController();
   Timer? _availabilityTimer;
+  Timer? _trackingTimer;
   bool _starting = false;
   bool _finishing = false;
   bool _locating = false;
-  bool _locationAttempted = false;
+  bool _trackingStarting = false;
+  bool _sendingLocation = false;
+  bool _mapReady = false;
+  bool _appIsForeground = true;
   Position? _currentPosition;
   String? _locationError;
+  String? _locationSyncMessage;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDetail();
+    _startAvailabilityRefresh();
+  }
 
-    // Actualiza el permiso mientras la pantalla está abierta, para habilitar
-    // el botón al llegar la hora de inicio sin exigir que el usuario recargue.
+  void _startAvailabilityRefresh() {
+    _availabilityTimer?.cancel();
     _availabilityTimer = Timer.periodic(
       const Duration(seconds: 30),
       (_) => _refreshDetail(),
@@ -55,8 +65,26 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _appIsForeground = true;
+      _startAvailabilityRefresh();
+      _refreshDetail();
+    } else if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _appIsForeground = false;
+      _availabilityTimer?.cancel();
+      _availabilityTimer = null;
+      _stopLocationTracking();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _availabilityTimer?.cancel();
+    _stopLocationTracking();
     super.dispose();
   }
 
@@ -87,10 +115,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
         SnackBar(content: Text(message)),
       );
 
-      // Primero se guarda el inicio en Laravel. La ubicación es un paso visual
-      // posterior: si el permiso GPS se deniega, el recorrido sigue iniciado.
+      // El detalle confirma el inicio y activa el envío GPS cada 5 segundos.
+      // Si el permiso de ubicación se deniega, el recorrido sigue abierto.
       await _refreshDetail();
-      await _captureCurrentLocation();
+      await _startLocationTracking();
     } on ApiException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -287,19 +315,17 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
     return result == true;
   }
 
-  Future<void> _captureCurrentLocation() async {
-    if (_locating || !mounted) return;
+  Future<void> _startLocationTracking() async {
+    if (!mounted || !_appIsForeground ||
+        _trackingTimer != null || _trackingStarting) {
+      return;
+    }
 
-    _locationAttempted = true;
-    setState(() {
-      _locating = true;
-      _locationError = null;
-    });
-
+    _trackingStarting = true;
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw Exception('Activa la ubicación del dispositivo para mostrar el mapa.');
+        throw Exception('Activa la ubicación del dispositivo para iniciar el seguimiento.');
       }
 
       var permission = await Geolocator.checkPermission();
@@ -307,15 +333,68 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
         permission = await Geolocator.requestPermission();
       }
 
-      if (permission == LocationPermission.denied) {
-        throw Exception('No se concedió el permiso para acceder a la ubicación.');
-      }
-      if (permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         throw Exception(
-          'El permiso de ubicación está bloqueado. Actívalo desde los ajustes del dispositivo o del navegador.',
+          'Debes conceder permiso de ubicación para enviar las posiciones del recorrido.',
         );
       }
 
+      if (!mounted || !_appIsForeground) return;
+
+      setState(() {
+        _locationError = null;
+        _locationSyncMessage = 'Seguimiento activo: envío automático cada 5 segundos.';
+      });
+
+      // No se crean solicitudes simultáneas. Si un ciclo tarda más de 5 segundos,
+      // se omite ese tick y se continúa en el siguiente.
+      _trackingTimer = Timer.periodic(
+        const Duration(seconds: 5),
+        (_) => _captureAndSendLocation(),
+      );
+
+      await _captureAndSendLocation();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationError = error is Exception
+            ? error.toString().replaceFirst('Exception: ', '')
+            : 'No se pudo activar el seguimiento de ubicación.';
+        _locationSyncMessage = 'Seguimiento detenido. Revisa el GPS y vuelve a intentarlo.';
+      });
+      _stopLocationTracking();
+    } finally {
+      _trackingStarting = false;
+    }
+  }
+
+  void _stopLocationTracking() {
+    _trackingTimer?.cancel();
+    _trackingTimer = null;
+  }
+
+  Future<void> _refreshLocation() async {
+    if (_trackingTimer == null) {
+      await _startLocationTracking();
+    } else {
+      await _captureAndSendLocation();
+    }
+  }
+
+  Future<void> _captureAndSendLocation() async {
+    if (!mounted || !_appIsForeground || _sendingLocation) return;
+
+    _sendingLocation = true;
+    final firstPosition = _currentPosition == null;
+    if (firstPosition) {
+      setState(() {
+        _locating = true;
+        _locationError = null;
+      });
+    }
+
+    try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -324,16 +403,54 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
       );
 
       if (!mounted) return;
+
       setState(() => _currentPosition = position);
+      if (_mapReady) {
+        _mapController.move(
+          LatLng(position.latitude, position.longitude),
+          16,
+        );
+      }
+
+      final response = await ProgrammingService.sendLocation(
+        widget.programmingId,
+        latitude: position.latitude,
+        longitude: position.longitude,
+        accuracy: position.accuracy,
+      );
+
+      if (!mounted) return;
+
+      final stored = response['stored'] == true;
+      setState(() {
+        _locationError = null;
+        _locationSyncMessage = stored
+            ? 'Ubicación guardada en el servidor.'
+            : 'Ubicación repetida (hasta 5 m). No se guardó otro punto.';
+      });
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _locationSyncMessage = error.message;
+      });
+
+      // El servidor responde 409 cuando el recorrido ya está cerrado.
+      if (error.statusCode == 409) {
+        _stopLocationTracking();
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
-        _locationError = error is Exception
-            ? error.toString().replaceFirst('Exception: ', '')
-            : 'No se pudo obtener tu ubicación. Inténtalo nuevamente.';
+        _locationError = _currentPosition == null
+            ? (error is Exception
+                ? error.toString().replaceFirst('Exception: ', '')
+                : 'No se pudo obtener tu ubicación.')
+            : null;
+        _locationSyncMessage = 'No se pudo enviar esta posición. Se volverá a intentar.';
       });
     } finally {
-      if (mounted) setState(() => _locating = false);
+      _sendingLocation = false;
+      if (mounted && _locating) setState(() => _locating = false);
     }
   }
 
@@ -362,11 +479,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 child: const Icon(Icons.my_location_rounded, color: _success, size: 19),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Tu ubicación actual',
                       style: TextStyle(
                         color: _primaryText,
@@ -374,17 +491,19 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Posición obtenida mediante el GPS',
-                      style: TextStyle(color: _secondaryText, fontSize: 10),
+                      _trackingTimer != null
+                          ? 'Enviando GPS cada 5 segundos'
+                          : 'Seguimiento GPS pausado',
+                      style: const TextStyle(color: _secondaryText, fontSize: 10),
                     ),
                   ],
                 ),
               ),
               IconButton(
                 tooltip: 'Actualizar ubicación',
-                onPressed: _locating ? null : _captureCurrentLocation,
+                onPressed: _sendingLocation ? null : _refreshLocation,
                 icon: const Icon(Icons.refresh_rounded, color: _success),
               ),
             ],
@@ -437,7 +556,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
-                    onPressed: _captureCurrentLocation,
+                    onPressed: _refreshLocation,
                     icon: const Icon(Icons.gps_fixed_rounded, size: 17),
                     label: const Text('Intentar nuevamente'),
                   ),
@@ -453,12 +572,13 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                 child: Stack(
                   children: [
                     FlutterMap(
-                      key: ValueKey('${position.latitude}_${position.longitude}'),
+                      mapController: _mapController,
                       options: MapOptions(
                         initialCenter: LatLng(position.latitude, position.longitude),
                         initialZoom: 16,
                         minZoom: 3,
                         maxZoom: 19,
+                        onMapReady: () => _mapReady = true,
                       ),
                       children: [
                         TileLayer(
@@ -525,6 +645,19 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
               ),
             ),
           ],
+          if (_locationSyncMessage != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              _locationSyncMessage!,
+              style: TextStyle(
+                color: _locationSyncMessage!.contains('No se pudo')
+                    ? const Color(0xFFB45309)
+                    : _success,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -565,6 +698,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      _stopLocationTracking();
       await _refreshDetail();
     } on ApiException catch (error) {
       if (!mounted) return;
@@ -684,11 +818,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
           final complete = data['complete'] == true;
 
           if (routeStarted && !routeFinished &&
-              !_locationAttempted && !_locating && _currentPosition == null &&
-              _locationError == null) {
-            _locationAttempted = true;
+              _appIsForeground && _trackingTimer == null &&
+              !_trackingStarting) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _captureCurrentLocation();
+              if (mounted) _startLocationTracking();
             });
           }
 
