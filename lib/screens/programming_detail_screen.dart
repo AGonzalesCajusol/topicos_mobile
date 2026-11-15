@@ -1004,6 +1004,9 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       _routeIsFinished = true;
       _routeLoaded = false;
       _currentPosition = null;
+      // FutureBuilder desmonta el mapa mientras consulta el detalle nuevo.
+      // Esperamos al siguiente onMapReady para volver a mover su controlador.
+      _mapReady = false;
       await _refreshDetail();
       if (!mounted) return;
       // La ruta histórica se consulta una sola vez después de confirmar el cierre.
