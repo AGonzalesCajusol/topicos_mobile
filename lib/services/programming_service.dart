@@ -30,4 +30,7 @@ class ProgrammingService {
           'accuracy': accuracy,
         },
       );
+
+  static Future<Map<String, dynamic>> routeLocations(int id) =>
+      ApiService.get('conductor/programaciones/$id/ubicaciones');
 }
