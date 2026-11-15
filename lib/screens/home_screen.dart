@@ -289,6 +289,8 @@ class _ProgrammingCard extends StatelessWidget {
     final days = (item['days'] as List?)?.join(' · ') ?? '';
     final status = text(item['status'], 'Programado');
     final ready = item['can_start_route'] == true;
+    final routeStarted = item['route_started'] == true;
+    final canFinish = item['can_finish_route'] == true;
 
     return Material(
       color: Colors.transparent,
@@ -410,7 +412,32 @@ class _ProgrammingCard extends StatelessWidget {
                     ),
                   );
                 }),
-                if (ready)
+                if (routeStarted && canFinish)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: _green.withOpacity(.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.play_circle_fill_rounded, color: _green, size: 17),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Recorrido iniciado. Recuerda finalizarlo al terminar el servicio.',
+                            style: TextStyle(
+                              color: _green,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (ready)
                   Container(
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(10),
@@ -424,7 +451,7 @@ class _ProgrammingCard extends StatelessWidget {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'El equipo está completo. El recorrido está habilitado.',
+                            'Estás dentro del horario para iniciar el recorrido.',
                             style: TextStyle(
                               color: _green,
                               fontSize: 11,
