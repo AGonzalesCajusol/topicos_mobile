@@ -295,6 +295,18 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen> {
                       label: 'Turno',
                       value: '${_value(data['shift'])} (${_value(data['hours'], 'Horario no definido')})',
                     ),
+                    if (data['started_at'] != null)
+                      _InfoRow(
+                        icon: Icons.play_circle_outline_rounded,
+                        label: 'Inicio real',
+                        value: _value(data['started_at']),
+                      ),
+                    if (data['finished_at'] != null)
+                      _InfoRow(
+                        icon: Icons.flag_circle_rounded,
+                        label: 'Finalización',
+                        value: _value(data['finished_at']),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 20),
