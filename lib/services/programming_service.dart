@@ -15,4 +15,19 @@ class ProgrammingService {
 
   static Future<Map<String, dynamic>> finish(int id) =>
       ApiService.postAuthenticated('conductor/programaciones/$id/finalizar');
+
+  static Future<Map<String, dynamic>> sendLocation(
+    int id, {
+    required double latitude,
+    required double longitude,
+    double? accuracy,
+  }) =>
+      ApiService.postAuthenticated(
+        'conductor/programaciones/$id/ubicacion',
+        {
+          'latitude': latitude,
+          'longitude': longitude,
+          'accuracy': accuracy,
+        },
+      );
 }
