@@ -287,9 +287,15 @@ class _ProgrammingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final people = (item['people'] as List?) ?? [];
     final days = (item['days'] as List?)?.join(' · ') ?? '';
-    final status = text(item['status'], 'Programado');
-    final ready = item['can_start_route'] == true;
     final routeStarted = item['route_started'] == true;
+    final routeFinished = item['route_finished'] == true;
+    final status = routeFinished
+        ? 'Finalizado'
+        : routeStarted
+            ? 'En curso'
+            : text(item['status'], 'Programado');
+    final statusColor = routeStarted && !routeFinished ? _green : _pending;
+    final ready = item['can_start_route'] == true;
     final canFinish = item['can_finish_route'] == true;
 
     return Material(
@@ -330,8 +336,8 @@ class _ProgrammingCard extends StatelessWidget {
                     child: Text(
                       status,
                       textAlign: TextAlign.right,
-                      style: const TextStyle(
-                        color: _pending,
+                      style: TextStyle(
+                        color: statusColor,
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
