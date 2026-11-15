@@ -1141,66 +1141,124 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                     backgroundColor: _panel,
                     onRefresh: _refreshDetail,
                     child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: _DateTile(date: _formattedDate(data['date']))),
-                      const SizedBox(width: 9),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: _success.withOpacity(.12),
-                          borderRadius: BorderRadius.circular(13),
-                          border: Border.all(color: _success.withOpacity(.3)),
-                        ),
-                        child: const Row(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 26),
+                      children: [
+                        Row(
                           children: [
-                            Icon(Icons.radio_button_checked_rounded, color: _success, size: 13),
-                            SizedBox(width: 6),
-                            Text('INICIADO', style: TextStyle(color: _success, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .5)),
+                            Expanded(
+                              child: _DateTile(
+                                date: _formattedDate(data['date']),
+                              ),
+                            ),
+                            const SizedBox(width: 9),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _success.withOpacity(.12),
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: _success.withOpacity(.3),
+                                ),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.radio_button_checked_rounded,
+                                    color: _success,
+                                    size: 13,
+                                  ),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'INICIADO',
+                                    style: TextStyle(
+                                      color: _success,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: .5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _locationMapCard(routeFinished: false, expanded: true),
-                  const SizedBox(height: 12),
-                  _DetailPanel(
-                    children: [
-                      _InfoRow(icon: Icons.location_on_rounded, label: 'Zona', value: _value(data['zone'])),
-                      _InfoRow(icon: Icons.local_shipping_rounded, label: 'Vehículo', value: _value(data['vehicle'])),
-                      _InfoRow(icon: Icons.confirmation_number_rounded, label: 'Placa', value: _value(data['plate'])),
-                      _InfoRow(icon: Icons.access_time_filled_rounded, label: 'Turno', value: '${_value(data['shift'])} · ${_value(data['hours'], 'Horario no definido')}'),
-                      if (data['started_at'] != null)
-                        _InfoRow(icon: Icons.play_circle_outline_rounded, label: 'Inicio', value: _value(data['started_at'])),
-                    ],
-                  ),
-                  if (_locationError != null) ...[
-                    const SizedBox(height: 10),
-                    Text(_locationError!, style: const TextStyle(color: Color(0xFFB45309), fontSize: 12)),
-                  ],
-                  if (_trackingAttempted && _trackingTimer == null && !_trackingStarting) ...[
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: _refreshLocation,
-                      icon: const Icon(Icons.my_location_rounded),
-                      label: const Text('REINTENTAR GPS'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: _success,
-                        side: const BorderSide(color: _success),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 14),
-                ],
+                        const SizedBox(height: 12),
+                        _locationMapCard(
+                          routeFinished: false,
+                          expanded: true,
+                        ),
+                        const SizedBox(height: 12),
+                        _DetailPanel(
+                          children: [
+                            _InfoRow(
+                              icon: Icons.location_on_rounded,
+                              label: 'Zona',
+                              value: _value(data['zone']),
+                            ),
+                            _InfoRow(
+                              icon: Icons.local_shipping_rounded,
+                              label: 'Vehículo',
+                              value: _value(data['vehicle']),
+                            ),
+                            _InfoRow(
+                              icon: Icons.confirmation_number_rounded,
+                              label: 'Placa',
+                              value: _value(data['plate']),
+                            ),
+                            _InfoRow(
+                              icon: Icons.access_time_filled_rounded,
+                              label: 'Turno',
+                              value:
+                                  '${_value(data['shift'])} · ${_value(data['hours'], 'Horario no definido')}',
+                            ),
+                            if (data['started_at'] != null)
+                              _InfoRow(
+                                icon: Icons.play_circle_outline_rounded,
+                                label: 'Inicio',
+                                value: _value(data['started_at']),
+                              ),
+                          ],
+                        ),
+                        if (_locationError != null) ...[
+                          const SizedBox(height: 10),
+                          Text(
+                            _locationError!,
+                            style: const TextStyle(
+                              color: Color(0xFFB45309),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                        if (_trackingAttempted &&
+                            _trackingTimer == null &&
+                            !_trackingStarting) ...[
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: _refreshLocation,
+                            icon: const Icon(Icons.my_location_rounded),
+                            label: const Text('REINTENTAR GPS'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _success,
+                              side: const BorderSide(color: _success),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 14),
+                      ],
                     ),
                   ),
                 ),
-                _activeRouteFooter(canFinish: canFinish, message: actionMessage),
+                _activeRouteFooter(
+                  canFinish: canFinish,
+                  message: actionMessage,
+                ),
               ],
             );
           }
