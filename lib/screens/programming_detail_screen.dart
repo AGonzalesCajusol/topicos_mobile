@@ -1920,6 +1920,41 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   }
 }
 
+class _MapControlButton extends StatelessWidget {
+  const _MapControlButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withOpacity(.97),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(11),
+        onTap: onPressed,
+        child: Tooltip(
+          message: tooltip,
+          child: SizedBox(
+            width: 38,
+            height: 38,
+            child: Icon(icon, color: const Color(0xFF1F2937), size: 19),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RouteMetric extends StatelessWidget {
   const _RouteMetric({required this.label, required this.value, required this.icon});
 
