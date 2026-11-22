@@ -517,7 +517,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       final combinedPoints = <LatLng>[...rawPoints];
       final combinedTimes = <DateTime?>[...rawTimes];
       var overlap = 0;
-      final maxOverlap = math.min(rawPoints.length, _routePoints.length);
+      final maxOverlap = math.min(rawPoints.length, _routePoints.length).toInt();
       for (var candidate = maxOverlap; candidate > 0; candidate--) {
         var matches = true;
         for (var offset = 0; offset < candidate; offset++) {
