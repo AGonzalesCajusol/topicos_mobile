@@ -176,7 +176,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final name = _text(widget.employee['first_name'], 'Conductor');
-    final lastName = _text(widget.employee['last_name'], '');
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
@@ -503,9 +502,9 @@ class _ProgrammingCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: Container(
-          padding: const EdgeInsets.all(17),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: _surface,
             borderRadius: BorderRadius.circular(20),
@@ -712,8 +711,8 @@ class _InfoLine extends StatelessWidget {
         children: [
           Icon(icon, color: _muted, size: 17),
           const SizedBox(width: 9),
-          SizedBox(width: 84, child: Text(label, style: const TextStyle(color: _muted, fontSize: 12))),
-          Expanded(child: Text(value, style: const TextStyle(color: _cream, fontSize: 12, fontWeight: FontWeight.w600))),
+          SizedBox(width: 76, child: Text(label, style: const TextStyle(color: _muted, fontSize: 11, fontWeight: FontWeight.w600))),
+          Expanded(child: Text(value, style: const TextStyle(color: _cream, fontSize: 13, fontWeight: FontWeight.w600, height: 1.35))),
         ],
       ),
     );
