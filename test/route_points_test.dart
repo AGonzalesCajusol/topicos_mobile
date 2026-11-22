@@ -7,12 +7,12 @@ void main() {
   group('deduplicateConsecutiveRoutePoints', () {
     const origin = LatLng(-6.7800000, -79.8300000);
 
-    test('discards exact repetitions and keeps movements greater than 5 metres', () {
+    test('discards exact consecutive repetitions and keeps any changed coordinate', () {
       final points = deduplicateConsecutiveRoutePoints([
         origin,
         origin,
-        const LatLng(-6.7799000, -79.8300000), // Approximately 11 m.
-        const LatLng(-6.7798000, -79.8300000), // Approximately 22 m from origin.
+        const LatLng(-6.7799000, -79.8300000), // Coordinate changed
+        const LatLng(-6.7798000, -79.8300000), // Coordinate changed again
       ]);
 
       expect(points, hasLength(3));
@@ -21,7 +21,7 @@ void main() {
       expect(points.last.latitude, closeTo(-6.7798000, 0.0000001));
     });
 
-    test('keeps points after a real movement greater than 5 metres', () {
+    test('keeps any changed coordinate', () {
       final points = deduplicateConsecutiveRoutePoints([
         origin,
         const LatLng(-6.7798000, -79.8300000),
