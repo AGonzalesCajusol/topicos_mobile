@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
@@ -93,71 +94,102 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
                 sliver: SliverToBoxAdapter(
                   child: Row(
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 46,
+                        height: 46,
                         decoration: BoxDecoration(
-                          color: _green,
+                          color: const Color(0xFFE8F3EC),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: const Icon(Icons.recycling_rounded, color: Colors.white, size: 29),
+                        child: const Icon(CupertinoIcons.leaf_arrow_circlepath, color: _green, size: 24),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 13),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('RSU · RECORRIDOS', style: TextStyle(color: _muted, fontSize: 11, letterSpacing: 1.3, fontWeight: FontWeight.w700)),
-                            Text('$name $lastName'.trim(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: _cream, fontSize: 17, fontWeight: FontWeight.w800)),
+                            const Text(
+                              'RSU  ·  OPERACIONES',
+                              style: TextStyle(color: _muted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.1),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Hola, $name',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(color: _cream, fontSize: 25, fontWeight: FontWeight.w800, letterSpacing: -0.7),
+                            ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: _loggingOut ? null : _logout,
-                        tooltip: 'Cerrar sesión',
-                        icon: const Icon(Icons.logout_rounded, color: _muted),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: IconButton(
+                          onPressed: _showProfileSheet,
+                          tooltip: 'Perfil',
+                          style: IconButton.styleFrom(
+                            backgroundColor: _surface,
+                            foregroundColor: _cream,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                              side: const BorderSide(color: _border),
+                            ),
+                          ),
+                          icon: const Icon(CupertinoIcons.person, size: 20),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                padding: const EdgeInsets.fromLTRB(22, 20, 22, 10),
                 sliver: SliverToBoxAdapter(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFFEAF5ED), Color(0xFFFFFFFF)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: _border),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Tu jornada', style: TextStyle(color: _muted, fontSize: 13, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 5),
-                        const Text('Organiza tu recorrido.', style: TextStyle(color: _cream, fontSize: 24, fontWeight: FontWeight.w800)),
-                        const SizedBox(height: 6),
-                        Text(_todayOnly ? 'Estas son las programaciones asignadas para hoy.' : 'Consulta todos los recorridos que tienes asignados.', style: const TextStyle(color: _muted, fontSize: 13, height: 1.4)),
-                      ],
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Mis recorridos',
+                        style: TextStyle(color: _cream, fontSize: 23, fontWeight: FontWeight.w800, letterSpacing: -0.55),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        _todayOnly ? 'Tu programación asignada para hoy.' : 'Consulta tus servicios y su estado.',
+                        style: const TextStyle(color: _muted, fontSize: 14, height: 1.4),
+                      ),
+                    ],
                   ),
                 ),
               ),
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                padding: const EdgeInsets.fromLTRB(22, 4, 22, 18),
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    children: [
-                      Expanded(child: _FilterButton(label: 'Programaciones de hoy', selected: _todayOnly, onTap: () => _changeFilter(true))),
-                      const SizedBox(width: 9),
-                      Expanded(child: _FilterButton(label: 'Todos mis recorridos', selected: !_todayOnly, onTap: () => _changeFilter(false))),
-                    ],
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(17),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEAF3ED),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(CupertinoIcons.info_circle, color: _green, size: 21),
+                        const SizedBox(width: 11),
+                        const Expanded(
+                          child: Text(
+                            'El recorrido se habilita cuando todo el personal registra su asistencia y estás dentro del horario permitido.',
+                            style: TextStyle(color: Color(0xFF315541), fontSize: 13, height: 1.45, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -287,6 +319,26 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: CupertinoTabBar(
+        backgroundColor: _surface,
+        activeColor: _green,
+        inactiveColor: _muted,
+        currentIndex: _todayOnly ? 0 : 1,
+        onTap: (index) {
+          if (index == 0) {
+            _changeFilter(true);
+          } else if (index == 1) {
+            _changeFilter(false);
+          } else {
+            _showProfileSheet();
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(CupertinoIcons.today), label: 'Hoy'),
+          BottomNavigationBarItem(icon: Icon(CupertinoIcons.map), label: 'Recorridos'),
+          BottomNavigationBarItem(icon: Icon(CupertinoIcons.person_crop_circle), label: 'Perfil'),
+        ],
       ),
     );
   }
