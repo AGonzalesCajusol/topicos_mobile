@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoIcons, CupertinoTabBar;
+import 'package:material_ui/material_ui.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import 'programming_detail_screen.dart';
