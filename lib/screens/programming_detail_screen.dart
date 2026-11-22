@@ -512,33 +512,24 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         }
       }
 
-      // Conserva puntos locales que aún no aparecen en la respuesta del
-      // servidor, pero evita concatenar dos veces el mismo historial.
+      // El endpoint devuelve el historial completo hasta el instante de la
+      // consulta. Solo añadimos lecturas locales posteriores a ese corte.
       final combinedPoints = <LatLng>[...rawPoints];
       final combinedTimes = <DateTime?>[...rawTimes];
-      var overlap = 0;
-      final maxOverlap = math.min(rawPoints.length, _routePoints.length).toInt();
-      for (var candidate = maxOverlap; candidate > 0; candidate--) {
-        var matches = true;
-        for (var offset = 0; offset < candidate; offset++) {
-          final serverPoint = rawPoints[rawPoints.length - candidate + offset];
-          final localPoint = _routePoints[offset];
-          if (serverPoint.latitude != localPoint.latitude ||
-              serverPoint.longitude != localPoint.longitude) {
-            matches = false;
-            break;
-          }
+      final serverLastTime = rawTimes.whereType<DateTime>().isNotEmpty
+          ? rawTimes.whereType<DateTime>().last
+          : null;
+      for (var index = 0; index < _routePoints.length; index++) {
+        final localTime = index < _routePointTimes.length
+            ? _routePointTimes[index]
+            : null;
+        final isAfterServerSnapshot = rawPoints.isEmpty ||
+            (localTime != null &&
+                (serverLastTime == null || !localTime.isBefore(serverLastTime)));
+        if (isAfterServerSnapshot) {
+          combinedPoints.add(_routePoints[index]);
+          combinedTimes.add(localTime);
         }
-        if (matches) {
-          overlap = candidate;
-          break;
-        }
-      }
-      for (var index = overlap; index < _routePoints.length; index++) {
-        combinedPoints.add(_routePoints[index]);
-        combinedTimes.add(
-          index < _routePointTimes.length ? _routePointTimes[index] : null,
-        );
       }
 
       final mergedPoints = <LatLng>[];
