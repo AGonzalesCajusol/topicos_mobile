@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import '../services/api_service.dart';
 import '../services/programming_service.dart';
 import 'programming_detail_screen.dart';
@@ -255,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                     sliver: SliverList.separated(
                       itemCount: filteredItems.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final item = Map<String, dynamic>.from(filteredItems[index] as Map);
                         final programmingId = int.tryParse(item['id'].toString());
@@ -372,7 +372,7 @@ class _ProgrammingCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _green.withOpacity(.14),
+                      color: _green.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     child: Text(
@@ -476,7 +476,7 @@ class _ProgrammingCard extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _green.withOpacity(.12),
+                      color: _green.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Row(
@@ -501,7 +501,7 @@ class _ProgrammingCard extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: _green.withOpacity(.12),
+                      color: _green.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Row(

@@ -3,7 +3,7 @@ class ApiConfig {
   // Puedes sobrescribirlo al ejecutar con --dart-define=API_BASE_URL=...
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://project-topicos.onrender.com',
+    defaultValue: 'https://project-topicos-1.onrender.com',
   );
 
   static Uri endpoint(String path) {
