@@ -219,24 +219,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: IconButton(
-                          onPressed: _showProfileSheet,
-                          tooltip: 'Perfil',
-                          style: IconButton.styleFrom(
-                            backgroundColor: _surface,
-                            foregroundColor: _cream,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
-                              side: const BorderSide(color: _border),
-                            ),
-                          ),
-                          icon: const Icon(CupertinoIcons.person, size: 20),
-                        ),
-                      ),
                     ],
                   ),
                 ),
