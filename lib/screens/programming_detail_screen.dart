@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -1575,21 +1576,57 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _pageBackground,
-      appBar: AppBar(
-        backgroundColor: _panel,
-        foregroundColor: _primaryText,
-        elevation: 0,
-        title: const Text(
-          'Detalle del recorrido',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-        ),
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: _panelBorder),
-        ),
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.of(context).maybePop(),
+                      child: const Icon(
+                        CupertinoIcons.chevron_left,
+                        color: _primaryText,
+                        size: 25,
+                      ),
+                    ),
+                  ),
+                  const Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          'RECORRIDO',
+                          style: TextStyle(
+                            color: _secondaryText,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Detalle de programación',
+                          style: TextStyle(
+                            color: _primaryText,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 44),
+                ],
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<Map<String, dynamic>>(
         future: _detailFuture,
         builder: (context, snapshot) {
           // Durante una actualización silenciosa se conserva el contenido
@@ -1977,6 +2014,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             ),
           );
         },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
