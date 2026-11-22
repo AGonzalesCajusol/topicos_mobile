@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -44,7 +45,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   double _cameraAnimationZoom = 16;
   DateTime? _lastAcceptedAt;
   Timer? _availabilityTimer;
-  Timer? _trackingTimer;
+  StreamSubscription<Position>? _locationSubscription;
   Timer? _routeRefreshTimer;
   final List<LatLng> _routePoints = [];
   final List<DateTime?> _routePointTimes = [];
@@ -97,8 +98,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       _appIsForeground = false;
       _availabilityTimer?.cancel();
       _availabilityTimer = null;
-      _stopLocationTracking();
-      _trackingAttempted = false;
+      // El servicio GPS sigue activo mientras el recorrido está abierto.
+      // Solo pausamos las consultas visuales al ocultarse la pantalla.
       _stopRouteRefresh();
     }
   }
@@ -409,7 +410,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
 
   Future<void> _startLocationTracking({bool retry = false}) async {
     if (!mounted || !_appIsForeground ||
-        _trackingTimer != null || _trackingStarting ||
+        _locationSubscription != null || _trackingStarting ||
         (_trackingAttempted && !retry)) {
       return;
     }
@@ -441,13 +442,50 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         _locationSyncMessage = 'Seguimiento activo: envío automático cada 5 segundos.';
       });
 
-      // No se crean solicitudes simultáneas. Si un ciclo tarda más de 5 segundos,
-      // se omite ese tick y se continúa en el siguiente.
-      _trackingTimer = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _captureAndSendLocation(),
+      final LocationSettings locationSettings;
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        locationSettings = AndroidSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 0,
+          intervalDuration: const Duration(seconds: 5),
+          foregroundNotificationConfig: const ForegroundNotificationConfig(
+            notificationTitle: 'Recorrido RSU en curso',
+            notificationText: 'Tu ubicación se registra cada 5 segundos.',
+            enableWakeLock: true,
+            setOngoing: true,
+          ),
+        );
+      } else if (defaultTargetPlatform == TargetPlatform.iOS) {
+        locationSettings = AppleSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          activityType: ActivityType.automotiveNavigation,
+          distanceFilter: 0,
+          pauseLocationUpdatesAutomatically: false,
+          allowBackgroundLocationUpdates: true,
+          showBackgroundLocationIndicator: true,
+        );
+      } else {
+        locationSettings = const LocationSettings(
+          accuracy: LocationAccuracy.bestForNavigation,
+          distanceFilter: 0,
+        );
+      }
+
+      _locationSubscription = Geolocator.getPositionStream(
+        locationSettings: locationSettings,
+      ).listen(
+        (position) => _captureAndSendLocation(position: position),
+        onError: (Object error) {
+          if (!mounted) return;
+          setState(() {
+            _locationError = 'Se interrumpió el servicio GPS: ' + error.toString();
+            _locationSyncMessage = 'Revisa los permisos y la señal de ubicación.';
+          });
+          _stopLocationTracking();
+        },
       );
 
+      // La primera lectura se solicita de inmediato; después continúa el stream.
       await _captureAndSendLocation();
     } catch (error) {
       if (!mounted) return;
@@ -464,8 +502,9 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   }
 
   void _stopLocationTracking() {
-    _trackingTimer?.cancel();
-    _trackingTimer = null;
+    final subscription = _locationSubscription;
+    _locationSubscription = null;
+    if (subscription != null) unawaited(subscription.cancel());
   }
 
   void _stopRouteRefresh() {
@@ -633,15 +672,15 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   }
 
   Future<void> _refreshLocation() async {
-    if (_trackingTimer == null) {
+    if (_locationSubscription == null) {
       await _startLocationTracking(retry: true);
     } else {
       await _captureAndSendLocation();
     }
   }
 
-  Future<void> _captureAndSendLocation() async {
-    if (!mounted || !_appIsForeground || _sendingLocation) return;
+  Future<void> _captureAndSendLocation({Position? position}) async {
+    if (!mounted || _sendingLocation) return;
 
     _sendingLocation = true;
     final firstPosition = _currentPosition == null;
@@ -653,7 +692,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     }
 
     try {
-      final position = await Geolocator.getCurrentPosition(
+      final capturedPosition = position ?? await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.bestForNavigation,
           timeLimit: Duration(seconds: 25),
@@ -664,14 +703,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
 
       // No dibujamos lecturas claramente imprecisas ni saltos imposibles:
       // contaminarían la distancia y producirían líneas fuera de la vía.
-      if (position.accuracy > 50) {
+      if (capturedPosition.accuracy > 50) {
         setState(() {
           _locationSyncMessage =
-              'Se descartó una lectura GPS imprecisa (${position.accuracy.toStringAsFixed(0)} m). Esperando una mejor señal.';
+              'Se descartó una lectura GPS imprecisa (${capturedPosition.accuracy.toStringAsFixed(0)} m). Esperando una mejor señal.';
         });
         return;
       }
-      if (!_isPlausiblePosition(position)) {
+      if (!_isPlausiblePosition(capturedPosition)) {
         setState(() {
           _locationSyncMessage =
               'Se descartó un salto GPS anómalo. Se conserva el último punto válido.';
@@ -679,14 +718,16 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         return;
       }
 
-      setState(() => _currentPosition = position);
-      _animateCameraTo(LatLng(position.latitude, position.longitude));
+      setState(() => _currentPosition = capturedPosition);
+      if (_appIsForeground) {
+        _animateCameraTo(LatLng(capturedPosition.latitude, capturedPosition.longitude));
+      }
 
       final response = await ProgrammingService.sendLocation(
         widget.programmingId,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        accuracy: position.accuracy,
+        latitude: capturedPosition.latitude,
+        longitude: capturedPosition.longitude,
+        accuracy: capturedPosition.accuracy,
       );
 
       if (!mounted) return;
@@ -702,7 +743,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       // Cada punto aceptado se agrega inmediatamente al trazo, sin volver a
       // descargar el historial completo ni reconstruir el mapa desde cero.
       if (stored) {
-        final point = LatLng(position.latitude, position.longitude);
+        final point = LatLng(capturedPosition.latitude, capturedPosition.longitude);
         final isNewPoint = _routePoints.isEmpty ||
             _routePoints.last.latitude != point.latitude ||
             _routePoints.last.longitude != point.longitude;
@@ -710,7 +751,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           response['recorded_at']?.toString() ?? '',
         );
         final previousAcceptedAt = _lastAcceptedAt;
-        final pointTime = recordedAt ?? position.timestamp;
+        final pointTime = recordedAt ?? capturedPosition.timestamp;
         _lastAcceptedAt = pointTime;
         if (isNewPoint) {
           setState(() {
@@ -1691,7 +1732,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                           ),
                         ],
                         if (_trackingAttempted &&
-                            _trackingTimer == null &&
+                            _locationSubscription == null &&
                             !_trackingStarting) ...[
                           const SizedBox(height: 8),
                           OutlinedButton.icon(
