@@ -988,28 +988,77 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     if (confirmed != true || !mounted) return;
 
     setState(() => _finishing = true);
+    _stopLocationTracking();
+
+    // Espera a que termine una petición GPS previa antes de capturar el punto final.
+    while (_sendingLocation && mounted) {
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+
+    double? finalLatitude;
+    double? finalLongitude;
+    double? finalAccuracy;
+    String? finalLocationWarning;
+
     try {
-      final response = await ProgrammingService.finish(widget.programmingId);
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        finalLocationWarning = 'GPS desactivado; se finalizará sin punto final.';
+      } else {
+        var permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          finalLocationWarning = 'No se obtuvo permiso GPS; se finalizará sin punto final.';
+        } else {
+          final finalPosition = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 25),
+            ),
+          );
+          finalLatitude = finalPosition.latitude;
+          finalLongitude = finalPosition.longitude;
+          finalAccuracy = finalPosition.accuracy;
+          if (mounted) {
+            setState(() => _currentPosition = finalPosition);
+          }
+        }
+      }
+    } catch (_) {
+      finalLocationWarning = 'No se pudo obtener el último GPS; se finalizará sin punto final.';
+    }
+
+    try {
+      final response = await ProgrammingService.finish(
+        widget.programmingId,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
+        accuracy: finalAccuracy,
+      );
       if (!mounted) return;
 
       final message = response['message']?.toString()
           ?? 'Recorrido finalizado correctamente.';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
+        SnackBar(
+          content: Text(finalLocationWarning == null
+              ? message
+              : '$message $finalLocationWarning"),
+        ),
       );
-      // Primero actualiza el estado de servidor a Finalizado. Así el FutureBuilder
-      // no puede volver a activar GPS ni el polling mientras carga el histórico.
+
+      // El backend guarda el punto final en la misma transacción que el cierre.
       _stopLocationTracking();
       _stopRouteRefresh();
       _routeIsFinished = true;
       _routeLoaded = false;
-      _currentPosition = null;
-      // FutureBuilder desmonta el mapa mientras consulta el detalle nuevo.
-      // Esperamos al siguiente onMapReady para volver a mover su controlador.
       _mapReady = false;
       await _refreshDetail();
       if (!mounted) return;
-      // La ruta histórica se consulta una sola vez después de confirmar el cierre.
       await _refreshRoutePoints();
     } on ApiException catch (error) {
       if (!mounted) return;
