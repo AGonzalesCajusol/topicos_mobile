@@ -35,9 +35,14 @@ class ProgrammingDetailScreen extends StatefulWidget {
 }
 
 class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver, TickerProviderStateMixin {
   late Future<Map<String, dynamic>> _detailFuture;
   final MapController _mapController = MapController();
+  late final AnimationController _cameraAnimationController;
+  LatLng? _cameraAnimationStart;
+  LatLng? _cameraAnimationEnd;
+  double _cameraAnimationZoom = 16;
+  DateTime? _lastAcceptedAt;
   Timer? _availabilityTimer;
   Timer? _trackingTimer;
   Timer? _routeRefreshTimer;
@@ -61,6 +66,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _cameraAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    )..addListener(_updateCameraAnimation);
     _loadDetail();
     _startAvailabilityRefresh();
   }
@@ -98,7 +107,75 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     _availabilityTimer?.cancel();
     _stopLocationTracking();
     _stopRouteRefresh();
+    _cameraAnimationController.dispose();
+    _mapController.dispose();
     super.dispose();
+  }
+
+  void _animateCameraTo(LatLng destination) {
+    if (!_mapReady) return;
+    try {
+      _cameraAnimationStart = _mapController.camera.center;
+      _cameraAnimationEnd = destination;
+      _cameraAnimationZoom = _mapController.camera.zoom.clamp(14.0, 18.0);
+      _cameraAnimationController.forward(from: 0);
+    } catch (_) {
+      try {
+        _mapController.move(destination, 16);
+      } catch (_) {
+        // El mapa todavía puede estar inicializándose.
+      }
+    }
+  }
+
+  void _updateCameraAnimation() {
+    if (!mounted || !_mapReady ||
+        _cameraAnimationStart == null || _cameraAnimationEnd == null) {
+      return;
+    }
+
+    final progress = Curves.easeInOutCubic.transform(
+      _cameraAnimationController.value,
+    );
+    final start = _cameraAnimationStart!;
+    final end = _cameraAnimationEnd!;
+    final center = LatLng(
+      start.latitude + (end.latitude - start.latitude) * progress,
+      start.longitude + (end.longitude - start.longitude) * progress,
+    );
+
+    try {
+      _mapController.move(center, _cameraAnimationZoom);
+    } catch (_) {
+      // El mapa puede haberse desmontado durante un cambio de estado.
+    }
+  }
+
+  double _distanceInMeters(LatLng a, LatLng b) {
+    const earthRadius = 6371000.0;
+    final latA = a.latitude * math.pi / 180;
+    final latB = b.latitude * math.pi / 180;
+    final deltaLat = (b.latitude - a.latitude) * math.pi / 180;
+    final deltaLon = (b.longitude - a.longitude) * math.pi / 180;
+    final value = math.pow(math.sin(deltaLat / 2), 2) +
+        math.cos(latA) * math.cos(latB) *
+            math.pow(math.sin(deltaLon / 2), 2);
+    return 2 * earthRadius * math.asin(math.sqrt(value.clamp(0.0, 1.0)));
+  }
+
+  bool _isPlausiblePosition(Position position) {
+    if (_routePoints.isEmpty || _lastAcceptedAt == null) return true;
+
+    final elapsedSeconds = position.timestamp
+            .difference(_lastAcceptedAt!)
+            .inMilliseconds /
+        1000;
+    if (elapsedSeconds <= 0) return true;
+
+    final nextPoint = LatLng(position.latitude, position.longitude);
+    final distance = _distanceInMeters(_routePoints.last, nextPoint);
+    // Descarta saltos incompatibles con un vehículo urbano (más de 162 km/h).
+    return distance / elapsedSeconds <= 45;
   }
 
   Future<void> _refreshDetail() async {
@@ -400,22 +477,14 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       return;
     }
 
-    if (routeFinished || !_appIsForeground) {
-      _stopRouteRefresh();
-      if (routeFinished && !_routeLoaded && !_routeLoading) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _refreshRoutePoints();
-        });
-      }
-      return;
-    }
-
-    if (_routeRefreshTimer == null) {
-      _refreshRoutePoints();
-      _routeRefreshTimer = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _refreshRoutePoints(),
-      );
+    // El histórico se descarga al entrar al recorrido, no cada 5 segundos.
+    // Los nuevos puntos confirmados por Laravel se agregan directamente al trazo.
+    if (!_routeLoaded && !_routeLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_routeLoaded && !_routeLoading) {
+          _refreshRoutePoints();
+        }
+      });
     }
   }
 
@@ -439,9 +508,24 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         }
       }
 
-      // Limpia también historiales antiguos. Solo conserva una lectura nueva
-      // cuando existe desplazamiento real respecto al último punto aceptado.
-      final points = deduplicateConsecutiveRoutePoints(rawPoints);
+      // Mantiene los puntos locales que pudieron llegar después de iniciarse
+      // esta consulta, evitando perder una lectura recién confirmada.
+      final points = deduplicateConsecutiveRoutePoints([
+        ...rawPoints,
+        ..._routePoints,
+      ]);
+      if (rawLocations is List && rawLocations.isNotEmpty) {
+        final lastRaw = rawLocations.last;
+        if (lastRaw is Map) {
+          final recordedAt = DateTime.tryParse(
+            lastRaw['recorded_at']?.toString() ?? '',
+          );
+          if (recordedAt != null &&
+              (_lastAcceptedAt == null || recordedAt.isAfter(_lastAcceptedAt!))) {
+            _lastAcceptedAt = recordedAt;
+          }
+        }
+      }
 
       if (!mounted) return;
       final routeChanged = points.length != _routePoints.length ||
@@ -473,7 +557,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final liveCenter = _currentPosition == null
               ? points.last
               : LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
-          _mapController.move(liveCenter, 16);
+          _animateCameraTo(liveCenter);
         }
       }
     } on ApiException catch (error) {
@@ -509,20 +593,32 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.bestForNavigation,
           timeLimit: Duration(seconds: 25),
         ),
       );
 
       if (!mounted) return;
 
-      setState(() => _currentPosition = position);
-      if (_mapReady) {
-        _mapController.move(
-          LatLng(position.latitude, position.longitude),
-          16,
-        );
+      // No dibujamos lecturas claramente imprecisas ni saltos imposibles:
+      // contaminarían la distancia y producirían líneas fuera de la vía.
+      if (position.accuracy > 50) {
+        setState(() {
+          _locationSyncMessage =
+              'Se descartó una lectura GPS imprecisa (${position.accuracy.toStringAsFixed(0)} m). Esperando una mejor señal.';
+        });
+        return;
       }
+      if (!_isPlausiblePosition(position)) {
+        setState(() {
+          _locationSyncMessage =
+              'Se descartó un salto GPS anómalo. Se conserva el último punto válido.';
+        });
+        return;
+      }
+
+      setState(() => _currentPosition = position);
+      _animateCameraTo(LatLng(position.latitude, position.longitude));
 
       final response = await ProgrammingService.sendLocation(
         widget.programmingId,
@@ -541,8 +637,24 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
             : 'Coordenadas idénticas consecutivas. Se conserva el punto anterior.';
       });
 
-      // Solo se incorpora al trazo lo que Laravel confirmó como guardado.
-      if (stored) await _refreshRoutePoints();
+      // Cada punto aceptado se agrega inmediatamente al trazo, sin volver a
+      // descargar el historial completo ni reconstruir el mapa desde cero.
+      if (stored) {
+        final point = LatLng(position.latitude, position.longitude);
+        final isNewPoint = _routePoints.isEmpty ||
+            _routePoints.last.latitude != point.latitude ||
+            _routePoints.last.longitude != point.longitude;
+        final recordedAt = DateTime.tryParse(
+          response['recorded_at']?.toString() ?? '',
+        );
+        _lastAcceptedAt = recordedAt ?? position.timestamp;
+        if (isNewPoint) {
+          setState(() {
+            _routePoints.add(point);
+            _routeLoaded = true;
+          });
+        }
+      }
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() {
@@ -1054,7 +1166,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       _stopRouteRefresh();
       _routeIsFinished = true;
       _routeLoaded = false;
-      _mapReady = false;
+      // Conserva la instancia del mapa: el histórico final se dibuja sobre
+      // el mismo widget, sin desmontarlo ni volver a inicializar los tiles.
       await _refreshDetail();
       if (!mounted) return;
       await _refreshRoutePoints();
@@ -1122,13 +1235,16 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       body: FutureBuilder<Map<String, dynamic>>(
         future: _detailFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          // Durante una actualización silenciosa se conserva el contenido
+          // anterior; así el FutureBuilder no desmonta el mapa cada 30 segundos.
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return const Center(
               child: CircularProgressIndicator(color: _accent),
             );
           }
 
-          if (snapshot.hasError) {
+          if (snapshot.hasError && !snapshot.hasData) {
             final error = snapshot.error;
             final message = error is ApiException
                 ? error.message
