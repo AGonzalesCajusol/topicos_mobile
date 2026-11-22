@@ -74,6 +74,100 @@ class _HomeScreenState extends State<HomeScreen> {
     await widget.onLogout();
   }
 
+  void _showProfileSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: _surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (sheetContext) {
+        final first = _text(widget.employee['first_name'], 'Conductor');
+        final last = _text(widget.employee['last_name'], '');
+        final fullName = '$first $last'.trim();
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 8, 22, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Tu cuenta',
+                  style: TextStyle(
+                    color: _cream,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEAF3ED),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        CupertinoIcons.person_fill,
+                        color: _green,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            fullName,
+                            style: const TextStyle(
+                              color: _cream,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          const Text(
+                            'Conductor · Sesión activa',
+                            style: TextStyle(color: _muted, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: _loggingOut
+                        ? null
+                        : () {
+                            Navigator.of(sheetContext).pop();
+                            _logout();
+                          },
+                    icon: const Icon(CupertinoIcons.square_arrow_right),
+                    label: const Text('Cerrar sesión'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFB3423D),
+                      side: const BorderSide(color: Color(0xFFE9D2D0)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _text(dynamic value, [String fallback = 'Sin información']) {
     if (value == null || value.toString().trim().isEmpty) return fallback;
     return value.toString();
