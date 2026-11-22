@@ -534,13 +534,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       if (!mounted) return;
 
       final stored = response['stored'] == true;
-      final minimumDistance =
-          (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '5';
       setState(() {
         _locationError = null;
         _locationSyncMessage = stored
             ? 'Ubicación guardada en el servidor.'
-            : 'Punto repetido o muy cercano (menos de ${minimumDistance} m). Se conserva el anterior.';
+            : 'Coordenadas idénticas consecutivas. Se conserva el punto anterior.';
       });
 
       // Solo se incorpora al trazo lo que Laravel confirmó como guardado.
