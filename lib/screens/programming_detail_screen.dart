@@ -1054,6 +1054,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                           options: MapOptions(
                             initialCenter: mapCenter,
                             initialZoom: 15,
+                            keepAlive: true,
                             minZoom: 3,
                             maxZoom: 19,
                             interactionOptions: const InteractionOptions(
@@ -1950,42 +1951,6 @@ class _MapControlButton extends StatelessWidget {
             child: Icon(icon, color: const Color(0xFF1F2937), size: 19),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _RouteMetric extends StatelessWidget {
-  const _RouteMetric({required this.label, required this.value, required this.icon});
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSoft,
-        borderRadius: BorderRadius.circular(11),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: _success, size: 16),
-          const SizedBox(width: 7),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(color: _secondaryText, fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: .6)),
-                const SizedBox(height: 2),
-                Text(value, style: const TextStyle(color: _primaryText, fontSize: 13, fontWeight: FontWeight.w900)),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
