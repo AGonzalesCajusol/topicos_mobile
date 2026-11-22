@@ -718,10 +718,10 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         final recordedAt = DateTime.tryParse(
           response['recorded_at']?.toString() ?? '',
         );
-        _lastAcceptedAt = recordedAt ?? position.timestamp;
+        final previousAcceptedAt = _lastAcceptedAt;
+        final pointTime = recordedAt ?? position.timestamp;
+        _lastAcceptedAt = pointTime;
         if (isNewPoint) {
-          final previousAcceptedAt = _lastAcceptedAt;
-          final pointTime = recordedAt ?? position.timestamp;
           setState(() {
             if (previousAcceptedAt != null &&
                 pointTime.difference(previousAcceptedAt).inSeconds > 20) {
