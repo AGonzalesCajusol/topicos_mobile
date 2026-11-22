@@ -435,6 +435,21 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         );
       }
 
+      if (permission != LocationPermission.always) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Para seguir registrando con la pantalla apagada, permite la ubicación en segundo plano desde los ajustes de la aplicación.',
+            ),
+            action: SnackBarAction(
+              label: 'AJUSTES',
+              onPressed: () => Geolocator.openAppSettings(),
+            ),
+            duration: const Duration(seconds: 8),
+          ),
+        );
+      }
+
       if (!mounted || !_appIsForeground) return;
 
       setState(() {
@@ -1623,7 +1638,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           _syncRouteRefresh(routeStarted, routeFinished);
 
           if (routeStarted && !routeFinished &&
-              _appIsForeground && _trackingTimer == null &&
+              _appIsForeground && _locationSubscription == null &&
               !_trackingStarting) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) _startLocationTracking();
