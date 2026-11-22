@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/api_service.dart';
@@ -9,35 +8,37 @@ import 'theme/app_theme.dart';
 void main() => runApp(const RsuApp());
 
 // ---------- Paleta ----------
-const bg = Color(0xFF10201C);
-const bg2 = Color(0xFF0B1613);
-const card = Color(0xFF182B26);
-const line = Color(0xFF2C4A41);
-const cream = Color(0xFFF4EFE3);
-const muted = Color(0xFF9DB5AB);
-const green = Color(0xFF7BE495);
-const greenDark = Color(0xFF3FA863);
-const yellow = Color(0xFFFFD25E);
-const coral = Color(0xFFFF7A66);
-const blue = Color(0xFF5AA9FF);
-const ink = Color(0xFF0B1613);
+const bg = Color(0xFFF6F7F5);
+const bg2 = Color(0xFFEEF2EF);
+const card = Color(0xFFFFFFFF);
+const line = Color(0xFFE2E7E3);
+const cream = Color(0xFF17221B);
+const muted = Color(0xFF748078);
+const green = Color(0xFF218653);
+const greenDark = Color(0xFF17653D);
+const yellow = Color(0xFF9A6A16);
+const coral = Color(0xFFC64B43);
+const blue = Color(0xFF3478B8);
+const ink = Color(0xFF17221B);
 
-TextStyle hand(double size, Color color) => GoogleFonts.caveat(
+TextStyle hand(double size, Color color) => TextStyle(
   fontSize: size,
   color: color,
-  fontWeight: FontWeight.w700,
+  fontWeight: FontWeight.w600,
+  letterSpacing: -0.25,
 );
 
 TextStyle display(
   double size,
   Color color, {
-  FontWeight w = FontWeight.w800,
+  FontWeight w = FontWeight.w700,
   double? h,
-}) => GoogleFonts.bricolageGrotesque(
+}) => TextStyle(
   fontSize: size,
   color: color,
   fontWeight: w,
   height: h,
+  letterSpacing: -0.45,
 );
 
 class RsuApp extends StatelessWidget {
@@ -48,6 +49,7 @@ class RsuApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'RSU Reciclaje',
+      locale: const Locale('es', 'PE'),
       theme: AppTheme.light,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -55,9 +57,22 @@ class RsuApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
+        Locale('es', 'PE'),
         Locale('es'),
+        Locale('en', 'US'),
         Locale('en'),
       ],
+      // Este límite explícito mantiene las localizaciones disponibles también
+      // para las rutas insertadas en el Overlay del Navigator.
+      builder: (context, child) => Localizations(
+        locale: const Locale('es', 'PE'),
+        delegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        child: child ?? const SizedBox.shrink(),
+      ),
       home: const AuthGate(),
     );
   }
@@ -118,9 +133,14 @@ class _AuthGateState extends State<AuthGate> {
       return Theme(
         data: ThemeData(
           useMaterial3: true,
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
           scaffoldBackgroundColor: bg,
-          colorScheme: const ColorScheme.dark(primary: green),
+          colorScheme: const ColorScheme.light(
+            primary: green,
+            onPrimary: Colors.white,
+            surface: card,
+            onSurface: cream,
+          ),
         ),
         child: LoginScreen(onLogin: _onLogin),
       );
@@ -190,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
           gradient: RadialGradient(
             center: Alignment(0, -1.1),
             radius: 1.3,
-            colors: [Color(0xFF1C3A31), bg, bg2],
+            colors: [Color(0xFFE4F1E8), bg, bg2],
             stops: [0, .55, 1],
           ),
         ),
