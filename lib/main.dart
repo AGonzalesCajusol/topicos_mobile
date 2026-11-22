@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
@@ -48,6 +49,15 @@ class RsuApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'RSU Reciclaje',
       theme: AppTheme.light,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es'),
+        Locale('en'),
+      ],
       home: const AuthGate(),
     );
   }
