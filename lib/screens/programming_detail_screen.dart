@@ -1047,7 +1047,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         SnackBar(
           content: Text(finalLocationWarning == null
               ? message
-              : '$message $finalLocationWarning"),
+              : '$message $finalLocationWarning'),
         ),
       );
 
