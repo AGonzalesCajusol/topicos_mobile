@@ -535,7 +535,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
 
       final stored = response['stored'] == true;
       final minimumDistance =
-          (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '15';
+          (response['minimum_distance_meters'] as num?)?.toStringAsFixed(0) ?? '5';
       setState(() {
         _locationError = null;
         _locationSyncMessage = stored
