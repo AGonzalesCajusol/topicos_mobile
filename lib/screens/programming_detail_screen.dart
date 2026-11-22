@@ -117,7 +117,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     try {
       _cameraAnimationStart = _mapController.camera.center;
       _cameraAnimationEnd = destination;
-      _cameraAnimationZoom = _mapController.camera.zoom.clamp(14.0, 18.0);
+      _cameraAnimationZoom = _mapController.camera.zoom.clamp(14.0, 18.0).toDouble();
       _cameraAnimationController.forward(from: 0);
     } catch (_) {
       try {
@@ -1126,15 +1126,26 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         } else {
           final finalPosition = await Geolocator.getCurrentPosition(
             locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
+              accuracy: LocationAccuracy.bestForNavigation,
               timeLimit: Duration(seconds: 25),
             ),
           );
-          finalLatitude = finalPosition.latitude;
-          finalLongitude = finalPosition.longitude;
-          finalAccuracy = finalPosition.accuracy;
-          if (mounted) {
-            setState(() => _currentPosition = finalPosition);
+          if (finalPosition.accuracy > 50) {
+            finalLocationWarning =
+                'La precisión GPS final fue insuficiente; se finalizará sin ese punto.';
+          } else if (!_isPlausiblePosition(finalPosition)) {
+            finalLocationWarning =
+                'La última lectura GPS presentó un salto anómalo; se finalizará sin ese punto.';
+          } else {
+            finalLatitude = finalPosition.latitude;
+            finalLongitude = finalPosition.longitude;
+            finalAccuracy = finalPosition.accuracy;
+            if (mounted) {
+              setState(() => _currentPosition = finalPosition);
+              _animateCameraTo(
+                LatLng(finalPosition.latitude, finalPosition.longitude),
+              );
+            }
           }
         }
       }
