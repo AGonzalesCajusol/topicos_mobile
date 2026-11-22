@@ -774,67 +774,164 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     return totalMeters / 1000;
   }
 
+  String _formatElapsed(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+    if (hours > 0) {
+      return hours.toString().padLeft(2, '0') + ':' +
+          minutes.toString().padLeft(2, '0');
+    }
+    return minutes.toString().padLeft(2, '0') + ':' +
+        seconds.toString().padLeft(2, '0');
+  }
+
   Widget _locationMapCard({required bool routeFinished, bool expanded = false}) {
     final position = _currentPosition;
     final route = List<LatLng>.unmodifiable(_routePoints);
-    final mapCenter = position != null
+    final mapCenter = position != null && !routeFinished
         ? LatLng(position.latitude, position.longitude)
-        : route.isNotEmpty
-            ? route.last
-            : null;
+        : route.isNotEmpty ? route.last : null;
 
-    Widget pointMarker(Color color, IconData icon) => Container(
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(.2),
-                blurRadius: 7,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(icon, color: Colors.white, size: 17),
-        );
+    final validTimes = _routePointTimes.whereType<DateTime>().toList();
+    final startedAt = validTimes.isNotEmpty ? validTimes.first : null;
+    final lastAt = validTimes.isNotEmpty ? validTimes.last : null;
+    final elapsed = startedAt == null
+        ? Duration.zero
+        : (routeFinished
+            ? (lastAt ?? startedAt).difference(startedAt)
+            : DateTime.now().difference(startedAt));
+    final distanceKm = _routeDistanceKm(route);
+    final averageSpeed = elapsed.inSeconds > 0
+        ? distanceKm / (elapsed.inSeconds / 3600)
+        : 0.0;
+    final mapHeight = expanded ? 390.0 : (routeFinished ? 380.0 : 300.0);
+
+    Widget mapPoint(Color color, IconData icon, {double size = 36}) {
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(.24),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(icon, color: Colors.white, size: size * .48),
+      );
+    }
 
     final markers = <Marker>[];
     if (route.isNotEmpty) {
-      markers.add(
-        Marker(
-          point: route.first,
-          width: 36,
-          height: 36,
-          child: pointMarker(_success, Icons.flag_rounded),
-        ),
-      );
-      if (route.length > 1) {
-        markers.add(
-          Marker(
-            point: route.last,
-            width: 38,
-            height: 38,
-            child: pointMarker(
-              routeFinished ? const Color(0xFF2563EB) : const Color(0xFFF59E0B),
-              routeFinished ? Icons.flag_rounded : Icons.navigation_rounded,
-            ),
-          ),
-        );
+      markers.add(Marker(
+        point: route.first,
+        width: 42,
+        height: 42,
+        child: mapPoint(const Color(0xFF16A34A), Icons.flag_rounded),
+      ));
+      if (route.length > 1 && routeFinished) {
+        markers.add(Marker(
+          point: route.last,
+          width: 42,
+          height: 42,
+          child: mapPoint(const Color(0xFF111827), Icons.flag_rounded),
+        ));
       }
     }
 
+    final polylines = <Polyline>[];
+    for (final segment in _routeSegments.where((item) => item.length > 1)) {
+      polylines.add(Polyline(points: segment, strokeWidth: 9, color: Colors.white));
+      polylines.add(Polyline(
+        points: segment,
+        strokeWidth: 5,
+        color: const Color(0xFF16A34A),
+      ));
+    }
+
+    void zoomMap(double delta) {
+      if (!_mapReady) return;
+      try {
+        final camera = _mapController.camera;
+        _mapController.move(
+          camera.center,
+          (camera.zoom + delta).clamp(3.0, 19.0).toDouble(),
+        );
+      } catch (_) {
+        // El mapa aún puede estar inicializándose.
+      }
+    }
+
+    Widget metric(String label, String value, IconData icon, {bool featured = false}) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: featured ? const Color(0xFF10251A) : AppColors.surfaceSoft,
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: featured ? const Color(0xFF245638) : _panelBorder,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(icon, size: 14,
+                    color: featured ? const Color(0xFF86EFAC) : _secondaryText),
+                  const SizedBox(width: 5),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: featured ? const Color(0xFFBBF7D0) : _secondaryText,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: .4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    color: featured ? Colors.white : _primaryText,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.all(13),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: _panel,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _panelBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.035),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(.045),
+            blurRadius: 24,
+            offset: const Offset(0, 9),
           ),
         ],
       ),
@@ -844,181 +941,284 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: _success.withOpacity(.1),
-                  borderRadius: BorderRadius.circular(11),
+                  color: const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.route_rounded, color: _success, size: 19),
+                child: const Icon(Icons.route_rounded, color: Color(0xFF15803D), size: 22),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 11),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      routeFinished ? 'Recorrido realizado' : 'Recorrido en tiempo real',
+                      routeFinished ? 'Resumen del recorrido' : 'Seguimiento del recorrido',
                       style: const TextStyle(
                         color: _primaryText,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       routeFinished
-                          ? 'Historial de ubicaciones registradas'
-                          : 'Actualizando la ruta cada 5 segundos',
+                          ? 'Registro GPS completo'
+                          : 'Tu recorrido se registra punto por punto',
                       style: const TextStyle(color: _secondaryText, fontSize: 10),
                     ),
                   ],
                 ),
               ),
-              if (!routeFinished)
-                IconButton(
-                  tooltip: 'Actualizar recorrido',
-                  onPressed: _routeLoading ? null : _refreshRoutePoints,
-                  icon: const Icon(Icons.refresh_rounded, color: _success),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: routeFinished ? const Color(0xFFF1F5F9) : const Color(0xFFDCFCE7),
+                  borderRadius: BorderRadius.circular(30),
                 ),
-            ],
-          ),
-          const SizedBox(height: 11),
-          if (mapCenter == null)
-            Container(
-              height: expanded ? 330 : 210,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSoft,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _routeLoading ? Icons.sync_rounded : Icons.route_outlined,
-                        color: _secondaryText,
-                        size: 30,
-                      ),
-                      const SizedBox(height: 9),
-                      Text(
-                        _routeLoading
-                            ? 'Cargando los puntos del recorrido...'
-                            : routeFinished
-                                ? 'Este recorrido no tiene ubicaciones GPS guardadas.'
-                                : 'Esperando la primera ubicación confirmada por el servidor.',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: _secondaryText,
-                          fontSize: 12,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else
-            ClipRRect(
-              borderRadius: BorderRadius.circular(13),
-              child: SizedBox(
-                height: expanded ? 330 : (routeFinished ? 360 : 265),
-                width: double.infinity,
-                child: Stack(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: mapCenter,
-                        initialZoom: 14,
-                        minZoom: 3,
-                        maxZoom: 19,
-                        interactionOptions: const InteractionOptions(
-                          // El gesto vertical queda libre para desplazar la pantalla.
-                          // El usuario conserva zoom por doble toque o pellizco.
-                          flags: InteractiveFlag.pinchZoom | InteractiveFlag.doubleTapZoom,
-                        ),
-                        onMapReady: () {
-                          _mapReady = true;
-                          if (_routeIsFinished && route.length > 1) {
-                            _mapController.fitCamera(
-                              CameraFit.coordinates(
-                                coordinates: route,
-                                padding: const EdgeInsets.all(42),
-                              ),
-                            );
-                          } else if (position != null) {
-                            _mapController.move(mapCenter, 16);
-                          } else if (route.isNotEmpty) {
-                            _mapController.move(route.last, 16);
-                          }
-                        },
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: routeFinished
+                            ? const Color(0xFF64748B)
+                            : const Color(0xFF16A34A),
+                        shape: BoxShape.circle,
                       ),
-                      children: [
-                        TileLayer(
-                          urlTemplate: _mapTileUrl,
-                          userAgentPackageName: 'com.example.doctor',
-                        ),
-                        if (_routeSegments.any((segment) => segment.length > 1))
-                          PolylineLayer(
-                            polylines: _routeSegments
-                                .where((segment) => segment.length > 1)
-                                .map(
-                                  (segment) => Polyline(
-                                    points: segment,
-                                    strokeWidth: 5,
-                                    color: _success,
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        if (markers.isNotEmpty)
-                          MarkerLayer(markers: markers),
-                        if (position != null && !routeFinished)
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: LatLng(position.latitude, position.longitude),
-                                width: 44,
-                                height: 44,
-                                child: pointMarker(
-                                  const Color(0xFFF59E0B),
-                                  Icons.navigation_rounded,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
                     ),
-                    Positioned(
-                      right: 7,
-                      bottom: 7,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.94),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Text(
-                          '© OpenStreetMap contributors',
-                          style: TextStyle(color: Color(0xFF333333), fontSize: 9),
-                        ),
+                    const SizedBox(width: 6),
+                    Text(
+                      routeFinished ? 'FINALIZADO' : 'EN VIVO',
+                      style: TextStyle(
+                        color: routeFinished
+                            ? const Color(0xFF475569)
+                            : const Color(0xFF166534),
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .4,
                       ),
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(19),
+            child: SizedBox(
+              height: mapCenter == null ? 235 : mapHeight,
+              width: double.infinity,
+              child: mapCenter == null
+                  ? Container(
+                      color: AppColors.surfaceSoft,
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(22),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _routeLoading ? Icons.sync_rounded : Icons.satellite_alt_rounded,
+                                color: _secondaryText,
+                                size: 34,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                _routeLoading
+                                    ? 'Cargando el historial GPS...'
+                                    : routeFinished
+                                        ? 'Este recorrido no tiene ubicaciones GPS registradas.'
+                                        : 'Esperando la primera ubicación GPS...',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: _secondaryText,
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  : Stack(
+                      children: [
+                        FlutterMap(
+                          mapController: _mapController,
+                          options: MapOptions(
+                            initialCenter: mapCenter,
+                            initialZoom: 15,
+                            minZoom: 3,
+                            maxZoom: 19,
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.pinchZoom |
+                                  InteractiveFlag.doubleTapZoom |
+                                  InteractiveFlag.drag,
+                            ),
+                            onMapReady: () {
+                              _mapReady = true;
+                              if (routeFinished && route.length > 1) {
+                                _mapController.fitCamera(CameraFit.coordinates(
+                                  coordinates: route,
+                                  padding: const EdgeInsets.all(55),
+                                ));
+                              } else {
+                                _mapController.move(mapCenter, 16);
+                              }
+                            },
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: _mapTileUrl,
+                              userAgentPackageName: 'com.example.doctor',
+                              maxNativeZoom: 19,
+                            ),
+                            if (polylines.isNotEmpty)
+                              PolylineLayer(polylines: polylines),
+                            if (markers.isNotEmpty) MarkerLayer(markers: markers),
+                            if (position != null && !routeFinished)
+                              MarkerLayer(markers: [
+                                Marker(
+                                  point: LatLng(position.latitude, position.longitude),
+                                  width: 54,
+                                  height: 54,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2563EB).withOpacity(.14),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    padding: const EdgeInsets.all(7),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF2563EB),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 3),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(.22),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(Icons.local_shipping_rounded,
+                                        color: Colors.white, size: 20),
+                                    ),
+                                  ),
+                                ),
+                              ]),
+                          ],
+                        ),
+                        Positioned(
+                          left: 11,
+                          top: 11,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(.96),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(.10),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  routeFinished ? Icons.flag_rounded : Icons.navigation_rounded,
+                                  color: const Color(0xFF15803D),
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  routeFinished ? 'Ruta realizada' : 'Vehículo en seguimiento',
+                                  style: const TextStyle(
+                                    color: Color(0xFF17211B),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          right: 9,
+                          top: 9,
+                          child: Column(
+                            children: [
+                              _MapControlButton(
+                                icon: Icons.add_rounded,
+                                tooltip: 'Acercar mapa',
+                                onPressed: () => zoomMap(.8),
+                              ),
+                              const SizedBox(height: 6),
+                              _MapControlButton(
+                                icon: Icons.remove_rounded,
+                                tooltip: 'Alejar mapa',
+                                onPressed: () => zoomMap(-.8),
+                              ),
+                              const SizedBox(height: 6),
+                              _MapControlButton(
+                                icon: Icons.my_location_rounded,
+                                tooltip: 'Centrar vehículo',
+                                onPressed: () {
+                                  final target = position == null
+                                      ? route.last
+                                      : LatLng(position.latitude, position.longitude);
+                                  _animateCameraTo(target);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          right: 7,
+                          bottom: 7,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(.94),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: const Text('© OpenStreetMap contributors',
+                              style: TextStyle(color: Color(0xFF333333), fontSize: 9)),
+                          ),
+                        ),
+                      ],
+                    ),
             ),
-          const SizedBox(height: 9),
+          ),
+          const SizedBox(height: 12),
           Row(
             children: [
+              metric('DISTANCIA', distanceKm.toStringAsFixed(2) + ' km',
+                Icons.route_rounded, featured: true),
+              const SizedBox(width: 8),
+              metric('TIEMPO', _formatElapsed(elapsed), Icons.timer_outlined),
+              const SizedBox(width: 8),
+              metric('VEL. MEDIA', averageSpeed.toStringAsFixed(1) + ' km/h',
+                Icons.speed_rounded),
+            ],
+          ),
+          const SizedBox(height: 11),
+          Row(
+            children: [
+              const Icon(Icons.my_location_rounded, size: 14, color: _success),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  '${route.length} puntos aceptados por el servidor',
+                  route.length.toString() + ' puntos GPS guardados',
                   style: const TextStyle(
                     color: _primaryText,
                     fontSize: 11,
@@ -1026,57 +1226,65 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                   ),
                 ),
               ),
-              if (!routeFinished)
-                const Text(
-                  'EN VIVO',
-                  style: TextStyle(
-                    color: _success,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .7,
-                  ),
-                )
-              else
-                const Text(
-                  'HISTÓRICO',
-                  style: TextStyle(
-                    color: _secondaryText,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: .7,
-                  ),
+              Text(
+                _routeSegments.length.toString() + ' tramos',
+                style: const TextStyle(
+                  color: _secondaryText,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                 ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(child: _RouteMetric(label: 'DISTANCIA', value: '${_routeDistanceKm(route).toStringAsFixed(2)} km', icon: Icons.route_rounded)),
-              const SizedBox(width: 9),
-              Expanded(child: _RouteMetric(label: 'PUNTOS GPS', value: route.length.toString(), icon: Icons.my_location_rounded)),
+              ),
             ],
           ),
           if (position != null && !routeFinished) ...[
-            const SizedBox(height: 5),
-            Text(
-              'GPS actual: ${position.latitude.toStringAsFixed(5)} · ${position.longitude.toStringAsFixed(5)}',
-              style: const TextStyle(
-                color: _secondaryText,
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-              ),
+            const SizedBox(height: 7),
+            Row(
+              children: [
+                const Icon(Icons.gps_fixed_rounded, size: 13, color: _secondaryText),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Precisión GPS: ±' + position.accuracy.toStringAsFixed(0) + ' m',
+                    style: const TextStyle(
+                      color: _secondaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  (position.speed < 0.5 ? 0 : (position.speed * 3.6).round()).toString() + ' km/h',
+                  style: const TextStyle(
+                    color: _success,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
             ),
           ],
           if (_locationSyncMessage != null) ...[
-            const SizedBox(height: 5),
-            Text(
-              _locationSyncMessage!,
-              style: TextStyle(
-                color: _locationSyncMessage!.contains('No se pudo')
-                    ? const Color(0xFFB45309)
-                    : _success,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: _locationSyncMessage!.contains('No se pudo') ||
+                        _locationSyncMessage!.contains('descartó')
+                    ? const Color(0xFFFFF7ED)
+                    : const Color(0xFFF0FDF4),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                _locationSyncMessage!,
+                style: TextStyle(
+                  color: _locationSyncMessage!.contains('No se pudo') ||
+                          _locationSyncMessage!.contains('descartó')
+                      ? const Color(0xFF9A3412)
+                      : const Color(0xFF166534),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],
