@@ -48,6 +48,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   DateTime? _lastAcceptedAt;
   Timer? _availabilityTimer;
   StreamSubscription<Position>? _locationSubscription;
+  Position? _pendingPosition;
   Timer? _routeRefreshTimer;
   final List<LatLng> _routePoints = [];
   final List<DateTime?> _routePointTimes = [];
@@ -697,7 +698,12 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   }
 
   Future<void> _captureAndSendLocation({Position? position}) async {
-    if (!mounted || _sendingLocation) return;
+    if (!mounted) return;
+    if (_sendingLocation) {
+      // Conserva la lectura más reciente si la petición anterior tarda más de 5 s.
+      if (position != null) _pendingPosition = position;
+      return;
+    }
 
     _sendingLocation = true;
     final firstPosition = _currentPosition == null;
@@ -807,6 +813,11 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
     } finally {
       _sendingLocation = false;
       if (mounted && _locating) setState(() => _locating = false);
+      final pendingPosition = _pendingPosition;
+      _pendingPosition = null;
+      if (mounted && pendingPosition != null) {
+        unawaited(_captureAndSendLocation(position: pendingPosition));
+      }
     }
   }
 
