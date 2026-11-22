@@ -47,6 +47,8 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   Timer? _trackingTimer;
   Timer? _routeRefreshTimer;
   final List<LatLng> _routePoints = [];
+  final List<DateTime?> _routePointTimes = [];
+  final List<List<LatLng>> _routeSegments = [];
   bool _routeLoading = false;
   bool _routeLoaded = false;
   bool _routeIsFinished = false;
@@ -497,6 +499,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
       final rawData = response['data'];
       final rawLocations = rawData is Map ? rawData['locations'] : null;
       final rawPoints = <LatLng>[];
+      final rawTimes = <DateTime?>[];
 
       if (rawLocations is List) {
         for (final raw in rawLocations) {
@@ -505,15 +508,58 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           final longitude = double.tryParse(raw['longitude']?.toString() ?? '');
           if (latitude == null || longitude == null) continue;
           rawPoints.add(LatLng(latitude, longitude));
+          rawTimes.add(DateTime.tryParse(raw['recorded_at']?.toString() ?? ''));
         }
       }
 
-      // Mantiene los puntos locales que pudieron llegar después de iniciarse
-      // esta consulta, evitando perder una lectura recién confirmada.
-      final points = deduplicateConsecutiveRoutePoints([
-        ...rawPoints,
-        ..._routePoints,
-      ]);
+      // Conserva también puntos locales confirmados durante la consulta.
+      final combinedPoints = <LatLng>[...rawPoints];
+      final combinedTimes = <DateTime?>[...rawTimes];
+      for (var index = 0; index < _routePoints.length; index++) {
+        combinedPoints.add(_routePoints[index]);
+        combinedTimes.add(
+          index < _routePointTimes.length ? _routePointTimes[index] : null,
+        );
+      }
+
+      final mergedPoints = <LatLng>[];
+      final mergedTimes = <DateTime?>[];
+      for (var index = 0; index < combinedPoints.length; index++) {
+        final point = combinedPoints[index];
+        if (mergedPoints.isNotEmpty &&
+            mergedPoints.last.latitude == point.latitude &&
+            mergedPoints.last.longitude == point.longitude) {
+          continue;
+        }
+        mergedPoints.add(point);
+        mergedTimes.add(combinedTimes[index]);
+      }
+      final points = List<LatLng>.unmodifiable(mergedPoints);
+
+      // Divide el trazo cuando hubo una pérdida prolongada de señal o un salto
+      // imposible. Así no se dibuja una línea ficticia entre dos zonas alejadas.
+      final segments = <List<LatLng>>[];
+      var currentSegment = <LatLng>[];
+      DateTime? previousPointTime;
+      for (var index = 0; index < points.length; index++) {
+        final point = points[index];
+        final pointTime = mergedTimes[index];
+        if (currentSegment.isNotEmpty &&
+            pointTime != null && previousPointTime != null) {
+          final gapSeconds =
+              pointTime.difference(previousPointTime).inMilliseconds / 1000;
+          final speed = gapSeconds > 0
+              ? _distanceInMeters(currentSegment.last, point) / gapSeconds
+              : 0.0;
+          if (gapSeconds > 20 || speed > 45) {
+            segments.add(currentSegment);
+            currentSegment = <LatLng>[];
+          }
+        }
+        currentSegment.add(point);
+        if (pointTime != null) previousPointTime = pointTime;
+      }
+      if (currentSegment.isNotEmpty) segments.add(currentSegment);
       if (rawLocations is List && rawLocations.isNotEmpty) {
         final lastRaw = rawLocations.last;
         if (lastRaw is Map) {
@@ -541,6 +587,12 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           _routePoints
             ..clear()
             ..addAll(points);
+          _routePointTimes
+            ..clear()
+            ..addAll(mergedTimes);
+          _routeSegments
+            ..clear()
+            ..addAll(segments);
           _routeLoaded = true;
         });
       }
@@ -649,8 +701,17 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         );
         _lastAcceptedAt = recordedAt ?? position.timestamp;
         if (isNewPoint) {
+          final previousAcceptedAt = _lastAcceptedAt;
+          final pointTime = recordedAt ?? position.timestamp;
           setState(() {
+            if (previousAcceptedAt != null &&
+                pointTime.difference(previousAcceptedAt).inSeconds > 20) {
+              _routeSegments.add(<LatLng>[]);
+            }
+            if (_routeSegments.isEmpty) _routeSegments.add(<LatLng>[]);
+            _routeSegments.last.add(point);
             _routePoints.add(point);
+            _routePointTimes.add(pointTime);
             _routeLoaded = true;
           });
         }
@@ -682,23 +743,16 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   }
 
   double _routeDistanceKm(List<LatLng> points) {
-    if (points.length < 2) return 0;
-    const earthRadiusKm = 6371.0;
-    var total = 0.0;
-    for (var index = 1; index < points.length; index++) {
-      final previous = points[index - 1];
-      final current = points[index];
-      final latitudeDelta = (current.latitude - previous.latitude) * math.pi / 180;
-      final longitudeDelta = (current.longitude - previous.longitude) * math.pi / 180;
-      final previousLatitude = previous.latitude * math.pi / 180;
-      final currentLatitude = current.latitude * math.pi / 180;
-      final a = math.pow(math.sin(latitudeDelta / 2), 2) +
-          math.cos(previousLatitude) * math.cos(currentLatitude) *
-              math.pow(math.sin(longitudeDelta / 2), 2);
-      final safeA = a.clamp(0.0, 1.0);
-      total += earthRadiusKm * 2 * math.asin(math.sqrt(safeA));
+    final segments = _routeSegments.isEmpty
+        ? <List<LatLng>>[points]
+        : _routeSegments;
+    var totalMeters = 0.0;
+    for (final segment in segments) {
+      for (var index = 1; index < segment.length; index++) {
+        totalMeters += _distanceInMeters(segment[index - 1], segment[index]);
+      }
     }
-    return total;
+    return totalMeters / 1000;
   }
 
   Widget _locationMapCard({required bool routeFinished, bool expanded = false}) {
@@ -890,15 +944,18 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
                           urlTemplate: _mapTileUrl,
                           userAgentPackageName: 'com.example.doctor',
                         ),
-                        if (route.length > 1)
+                        if (_routeSegments.any((segment) => segment.length > 1))
                           PolylineLayer(
-                            polylines: [
-                              Polyline(
-                                points: route,
-                                strokeWidth: 5,
-                                color: _success,
-                              ),
-                            ],
+                            polylines: _routeSegments
+                                .where((segment) => segment.length > 1)
+                                .map(
+                                  (segment) => Polyline(
+                                    points: segment,
+                                    strokeWidth: 5,
+                                    color: _success,
+                                  ),
+                                )
+                                .toList(),
                           ),
                         if (markers.isNotEmpty)
                           MarkerLayer(markers: markers),
