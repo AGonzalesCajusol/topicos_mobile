@@ -522,6 +522,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
   void _stopLocationTracking() {
     final subscription = _locationSubscription;
     _locationSubscription = null;
+    _pendingPosition = null;
     if (subscription != null) unawaited(subscription.cancel());
   }
 
