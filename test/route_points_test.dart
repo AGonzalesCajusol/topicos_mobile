@@ -7,7 +7,7 @@ void main() {
   group('deduplicateConsecutiveRoutePoints', () {
     const origin = LatLng(-6.7800000, -79.8300000);
 
-    test('discards exact repetitions and GPS drift below 5 metres', () {
+    test('discards exact repetitions and keeps movements greater than 5 metres', () {
       final points = deduplicateConsecutiveRoutePoints([
         origin,
         origin,
