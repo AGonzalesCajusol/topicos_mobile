@@ -1,3 +1,4 @@
+import 'package:cupertino_ui/cupertino_ui.dart' show CupertinoTheme, CupertinoThemeData;
 import 'package:material_ui/material_ui.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
@@ -59,7 +60,13 @@ class RsuApp extends StatelessWidget {
       ],
       // Conecta los widgets antiguos que aún usan algunos plugins de Flutter.
       builder: (context, child) => MaterialUiCompatibilityBridge(
-        child: child ?? const SizedBox.shrink(),
+        child: CupertinoTheme(
+          data: const CupertinoThemeData(
+            brightness: Brightness.light,
+            primaryColor: Color(0xFF218653),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
       home: const AuthGate(),
     );
