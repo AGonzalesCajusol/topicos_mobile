@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
 import 'services/api_service.dart';
@@ -51,26 +50,15 @@ class RsuApp extends StatelessWidget {
       title: 'RSU Reciclaje',
       locale: const Locale('es', 'PE'),
       theme: AppTheme.light,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       supportedLocales: const [
         Locale('es', 'PE'),
         Locale('es'),
         Locale('en', 'US'),
         Locale('en'),
       ],
-      // Este límite explícito mantiene las localizaciones disponibles también
-      // para las rutas insertadas en el Overlay del Navigator.
-      builder: (context, child) => Localizations(
-        locale: const Locale('es', 'PE'),
-        delegates: const [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+      // Conecta los widgets antiguos que aún usan algunos plugins de Flutter.
+      builder: (context, child) => MaterialUiCompatibilityBridge(
         child: child ?? const SizedBox.shrink(),
       ),
       home: const AuthGate(),
