@@ -1,25 +1,8 @@
-import 'dart:math' as math;
-
 import 'package:latlong2/latlong.dart';
 
-const double minimumRouteMovementMeters = 5.0;
-
-/// Removes consecutive GPS samples that do not represent a meaningful movement.
-///
-/// Only compares each candidate with the last accepted point. Returning to a
-/// previously visited place later in the route is therefore preserved.
-List<LatLng> deduplicateConsecutiveRoutePoints(
-  Iterable<LatLng> locations, {
-  double minimumMovementMeters = minimumRouteMovementMeters,
-}) {
-  if (!minimumMovementMeters.isFinite || minimumMovementMeters < 0) {
-    throw ArgumentError.value(
-      minimumMovementMeters,
-      'minimumMovementMeters',
-      'Must be a finite, non-negative distance.',
-    );
-  }
-
+/// Removes only exact consecutive GPS coordinate repetitions.
+/// Any coordinate change is kept, regardless of distance.
+List<LatLng> deduplicateConsecutiveRoutePoints(Iterable<LatLng> locations) {
   final accepted = <LatLng>[];
 
   for (final point in locations) {
@@ -33,7 +16,8 @@ List<LatLng> deduplicateConsecutiveRoutePoints(
     }
 
     if (accepted.isNotEmpty &&
-        _distanceInMeters(accepted.last, point) <= minimumMovementMeters) {
+        accepted.last.latitude == point.latitude &&
+        accepted.last.longitude == point.longitude) {
       continue;
     }
 
@@ -41,20 +25,4 @@ List<LatLng> deduplicateConsecutiveRoutePoints(
   }
 
   return List<LatLng>.unmodifiable(accepted);
-}
-
-double _distanceInMeters(LatLng first, LatLng second) {
-  const earthRadiusMeters = 6371000.0;
-  final latitude1 = first.latitude * math.pi / 180;
-  final latitude2 = second.latitude * math.pi / 180;
-  final latitudeDelta = (second.latitude - first.latitude) * math.pi / 180;
-  final longitudeDelta = (second.longitude - first.longitude) * math.pi / 180;
-  final sinLatitude = math.sin(latitudeDelta / 2);
-  final sinLongitude = math.sin(longitudeDelta / 2);
-  final value = sinLatitude * sinLatitude +
-      math.cos(latitude1) * math.cos(latitude2) * sinLongitude * sinLongitude;
-
-  return earthRadiusMeters *
-      2 *
-      math.asin(math.sqrt(value.clamp(0.0, 1.0)));
 }
