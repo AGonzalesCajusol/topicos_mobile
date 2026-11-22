@@ -512,10 +512,29 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
         }
       }
 
-      // Conserva también puntos locales confirmados durante la consulta.
+      // Conserva puntos locales que aún no aparecen en la respuesta del
+      // servidor, pero evita concatenar dos veces el mismo historial.
       final combinedPoints = <LatLng>[...rawPoints];
       final combinedTimes = <DateTime?>[...rawTimes];
-      for (var index = 0; index < _routePoints.length; index++) {
+      var overlap = 0;
+      final maxOverlap = math.min(rawPoints.length, _routePoints.length);
+      for (var candidate = maxOverlap; candidate > 0; candidate--) {
+        var matches = true;
+        for (var offset = 0; offset < candidate; offset++) {
+          final serverPoint = rawPoints[rawPoints.length - candidate + offset];
+          final localPoint = _routePoints[offset];
+          if (serverPoint.latitude != localPoint.latitude ||
+              serverPoint.longitude != localPoint.longitude) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) {
+          overlap = candidate;
+          break;
+        }
+      }
+      for (var index = overlap; index < _routePoints.length; index++) {
         combinedPoints.add(_routePoints[index]);
         combinedTimes.add(
           index < _routePointTimes.length ? _routePointTimes[index] : null,
