@@ -266,7 +266,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 sliver: SliverToBoxAdapter(
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(17),
+                    padding: const EdgeInsets.all(19),
                     decoration: BoxDecoration(
                       color: const Color(0xFFEAF3ED),
                       borderRadius: BorderRadius.circular(22),
@@ -381,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
                     sliver: SliverList.separated(
                       itemCount: filteredItems.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox(height: 15),
                       itemBuilder: (context, index) {
                         final item = Map<String, dynamic>.from(filteredItems[index] as Map);
                         final programmingId = int.tryParse(item['id'].toString());
@@ -447,13 +447,14 @@ class _FilterButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? _green : _surface,
-      borderRadius: BorderRadius.circular(14),
+      color: selected ? _green : const Color(0xFFF0F3F0),
+      borderRadius: BorderRadius.circular(15),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13),
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: selected ? _green : _border),
@@ -461,7 +462,7 @@ class _FilterButton extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(color: selected ? Colors.white : _cream, fontSize: 12, fontWeight: FontWeight.w800),
+            style: TextStyle(color: selected ? Colors.white : _cream, fontSize: 13, fontWeight: FontWeight.w700),
           ),
         ),
       ),
@@ -493,13 +494,13 @@ class _ProgrammingCard extends StatelessWidget {
         : routeStarted
             ? 'Iniciado'
             : text(item['status'], 'Programado');
-    final statusColor = routeStarted && !routeFinished ? _green : _pending;
+    final statusColor = routeFinished || routeStarted ? _green : _pending;
     final ready = item['can_start_route'] == true;
     final canFinish = item['can_finish_route'] == true;
 
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(22),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
@@ -509,6 +510,9 @@ class _ProgrammingCard extends StatelessWidget {
             color: _surface,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: _border),
+            boxShadow: const [
+              BoxShadow(color: Color(0x08000000), blurRadius: 18, offset: Offset(0, 5)),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
