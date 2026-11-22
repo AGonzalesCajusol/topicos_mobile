@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:latlong2/latlong.dart';
 
-const double minimumRouteMovementMeters = 15.0;
+const double minimumRouteMovementMeters = 5.0;
 
 /// Removes consecutive GPS samples that do not represent a meaningful movement.
 ///
