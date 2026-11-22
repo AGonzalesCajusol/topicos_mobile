@@ -936,7 +936,7 @@ class _ProgrammingDetailScreenState extends State<ProgrammingDetailScreen>
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
             color: featured ? const Color(0xFF10251A) : AppColors.surfaceSoft,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: featured ? const Color(0xFF245638) : _panelBorder,
             ),
@@ -2040,7 +2040,7 @@ class _MapControlButton extends StatelessWidget {
       color: Colors.white.withOpacity(.97),
       elevation: 3,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(11),
@@ -2048,8 +2048,8 @@ class _MapControlButton extends StatelessWidget {
         child: Tooltip(
           message: tooltip,
           child: SizedBox(
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             child: Icon(icon, color: const Color(0xFF1F2937), size: 19),
           ),
         ),
@@ -2200,8 +2200,8 @@ class _InfoRow extends StatelessWidget {
               value,
               style: const TextStyle(
                 color: _primaryText,
-                fontSize: 12,
-                height: 1.35,
+                fontSize: 13,
+                height: 1.4,
                 fontWeight: FontWeight.w700,
               ),
             ),
